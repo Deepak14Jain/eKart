@@ -5,23 +5,24 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class OrderItem {
+public class BillingOrder {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID OrderItemId;
+    private UUID OrderId;
 
     @ManyToOne
-    private Product product;
+    private Profile profile;
 
-    @ManyToOne
-    private BillingOrder billingOrder;
+    private LocalDateTime orderDate;
 
-    private int quantity;
-    private double priceAtOrderTime;
+    @OneToMany(mappedBy = "billingOrder", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> items;
 }

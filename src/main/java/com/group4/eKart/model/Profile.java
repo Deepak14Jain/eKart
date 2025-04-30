@@ -5,20 +5,26 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Product {
+public class Profile {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID productId;
+    private UUID profileId;
+    private String username;
+    private String password;
+    private String address;
+    private String phno;
     private String name;
-    private String description;
-    private double price;
-    private int quantityOnHand;
+
     @Enumerated(EnumType.STRING)
-    private ProductCategory productCategory;
+    private Roles role;
+
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Feedback> feedbacks;
 }

@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface CartItemService {
     public CartItem addToCart(UUID userId, UUID productId, int quantity);
     public CartItem updateCartItem(UUID cartItemId, int newQuantity);
-    public void removeFromCart(UUID cartItemId);
+    public boolean removeFromCart(UUID cartItemId);
     public List<CartItem> getCartItemsByUser(UUID userId);
-    public void clearCart(UUID userId);
+    public boolean clearCart(UUID userId);
 }
