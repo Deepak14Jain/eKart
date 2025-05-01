@@ -1,6 +1,7 @@
 package com.group4.eKart.service;
 
 import com.group4.eKart.model.Feedback;
+import com.group4.eKart.model.Profile;
 import com.group4.eKart.repository.FeedbackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -13,10 +14,11 @@ public class FeedbackServiceImpl implements FeedbackService {
     FeedbackRepository feedbackRepository;
 
     @Override
-    public Feedback submitFeedback(String comment) {
+    public Feedback submitFeedback(Profile profile, String comment) {
         Feedback newFeedback = new Feedback();
         newFeedback.setDate(LocalDateTime.now());
         newFeedback.setComment(comment);
+        newFeedback.setProfile(profile);
         return feedbackRepository.save(newFeedback);
     }
 

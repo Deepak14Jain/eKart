@@ -19,6 +19,7 @@ public class Feedback {
     @ManyToOne
     private Profile profile;
 
+    @NonNull
     private String comment;
     private LocalDateTime date;
 

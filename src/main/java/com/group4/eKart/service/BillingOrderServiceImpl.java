@@ -7,7 +7,7 @@ import java.util.UUID;
 
 public class BillingOrderServiceImpl implements BillingOrderService {
     @Override
-    public BillingOrder placeOrder(UUID userId) {
+    public BillingOrder placeOrder(UUID profileId) {
         return null;
     }
 
@@ -17,7 +17,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     }
 
     @Override
-    public List<BillingOrder> getOrdersByProfile(UUID userId) {
+    public List<BillingOrder> getOrdersByProfile(UUID profileId) {
         return List.of();
     }
 

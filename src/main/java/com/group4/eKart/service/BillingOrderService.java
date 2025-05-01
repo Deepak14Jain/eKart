@@ -8,9 +8,9 @@ import java.util.UUID;
 
 @Service
 public interface BillingOrderService {
-    public BillingOrder placeOrder(UUID userId);
+    public BillingOrder placeOrder(UUID profileId);
     public BillingOrder getOrderById(UUID orderId);
-    public List<BillingOrder> getOrdersByProfile(UUID userId);
+    public List<BillingOrder> getOrdersByProfile(UUID profileId);
     public boolean cancelOrder(UUID orderId);
-    public List<BillingOrder> getAllOrders(); // Admin view
+    public List<BillingOrder> getAllOrders();
 }
