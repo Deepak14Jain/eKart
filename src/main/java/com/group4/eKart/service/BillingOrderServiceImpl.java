@@ -7,6 +7,7 @@ import com.group4.eKart.repository.OrderItemRepository;
 import com.group4.eKart.repository.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     OrderItemServiceImpl orderItemService;
 
     @Override
+    @Transactional
     public BillingOrder placeInstantOrder(Profile profile, Product product, int quantity) {
         BillingOrder billingOrder = new BillingOrder();
 
@@ -41,6 +43,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     }
 
     @Override
+    @Transactional
     public BillingOrder placeOrder(Profile profile) {
         List<CartItem> cartItems = cartItemRepository.findByProfileUsername(profile.getUsername());
 

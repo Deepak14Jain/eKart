@@ -9,6 +9,7 @@ import com.group4.eKart.repository.OrderItemRepository;
 import com.group4.eKart.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -65,6 +66,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public List<SalesSummaryDTO> getSalesSummaryByProduct(TimeRange range) {
         LocalDate now = LocalDate.now();
         LocalDate startDate = getStartDateFor(range, now);
@@ -72,6 +74,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public List<SalesSummaryDTO> getSalesSummaryByCategory(TimeRange range) {
         LocalDate now = LocalDate.now();
         LocalDate startDate = getStartDateFor(range, now);

@@ -60,6 +60,7 @@ public class ProfileServiceImpl implements ProfileService {
         Profile profile = profileRepository.findById(profileId).get();
         if (Objects.equals(profile.getPassword(), oldPassword)){
             profile.setPassword(newPassword);
+            profileRepository.save(profile);
             return true;
         }
         return false;
