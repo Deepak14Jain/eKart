@@ -3,15 +3,21 @@ package com.group4.eKart.service;
 import com.group4.eKart.model.Feedback;
 import com.group4.eKart.model.Profile;
 import com.group4.eKart.repository.FeedbackRepository;
+import com.group4.eKart.repository.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class FeedbackServiceImpl implements FeedbackService {
     @Autowired
     FeedbackRepository feedbackRepository;
+
+    @Autowired
+    ProfileRepository profileRepository;
 
     @Override
     public Feedback submitFeedback(Profile profile, String comment) {
@@ -19,6 +25,10 @@ public class FeedbackServiceImpl implements FeedbackService {
         newFeedback.setDate(LocalDateTime.now());
         newFeedback.setComment(comment);
         newFeedback.setProfile(profile);
+
+        profile.getFeedbacks().add(newFeedback);
+        profileRepository.save(profile);
+
         return feedbackRepository.save(newFeedback);
     }
 

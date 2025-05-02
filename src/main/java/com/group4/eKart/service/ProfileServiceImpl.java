@@ -4,11 +4,13 @@ import com.group4.eKart.dto.SalesSummaryDTO;
 import com.group4.eKart.model.*;
 import com.group4.eKart.repository.ProfileRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+@Service
 public class ProfileServiceImpl implements ProfileService {
 
     @Autowired

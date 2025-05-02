@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -15,13 +17,18 @@ import java.util.UUID;
 public class BillingOrder {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID OrderId;
+    private UUID billingOrderId;
 
     @ManyToOne
     private Profile profile;
 
+    @Column(nullable = false)
     private LocalDateTime orderDate;
 
     @OneToMany(mappedBy = "billingOrder", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<OrderItem> items;
+    private Set<OrderItem> items = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BillingOrderStatus billingOrderStatus = BillingOrderStatus.PENDING;
 }

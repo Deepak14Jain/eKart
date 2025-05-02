@@ -5,11 +5,13 @@ import com.group4.eKart.model.Product;
 import com.group4.eKart.model.Profile;
 import com.group4.eKart.repository.CartItemRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Service
 public class CartItemServiceImpl implements CartItemService {
     @Autowired
     CartItemRepository cartItemRepository;

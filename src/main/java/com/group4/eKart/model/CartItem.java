@@ -21,5 +21,6 @@ public class CartItem {
     @ManyToOne
     private Product product;
 
+    @Column(nullable = false)
     private int quantity;
 }

@@ -21,6 +21,9 @@ public class OrderItem {
     @ManyToOne
     private BillingOrder billingOrder;
 
+    @Column(nullable = false)
     private int quantity;
+
+    @Column(nullable = false)
     private double priceAtOrderTime;
 }
