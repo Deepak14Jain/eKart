@@ -1,7 +1,6 @@
 package com.group4.eKart.validator;
 
 import com.group4.eKart.model.Profile;
-import com.group4.eKart.model.Roles;
 import org.hibernate.service.spi.ServiceException;
 import org.springframework.stereotype.Component;
 
