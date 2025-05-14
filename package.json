@@ -1,0 +1,22 @@
+{
+  "name": "ekart",
+  "version": "1.0.0",
+  "description": "Online Shopping System",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deepak14Jain/eKart.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Deepak14Jain/eKart/issues"
+  },
+  "homepage": "https://github.com/Deepak14Jain/eKart#readme"
+}
