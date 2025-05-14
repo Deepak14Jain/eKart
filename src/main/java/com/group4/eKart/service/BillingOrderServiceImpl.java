@@ -3,41 +3,51 @@ package com.group4.eKart.service;
 import com.group4.eKart.model.*;
 import com.group4.eKart.repository.BillingOrderRepository;
 import com.group4.eKart.repository.CartItemRepository;
-import com.group4.eKart.repository.OrderItemRepository;
-import com.group4.eKart.repository.ProfileRepository;
+import com.group4.eKart.validator.BillingOrderValidations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class BillingOrderServiceImpl implements BillingOrderService {
-    @Autowired
-    BillingOrderRepository billingOrderRepository;
 
     @Autowired
-    CartItemRepository cartItemRepository;
+    private BillingOrderRepository billingOrderRepository;
 
     @Autowired
-    OrderItemServiceImpl orderItemService;
+    private CartItemRepository cartItemRepository;
+
+    @Autowired
+    private OrderItemServiceImpl orderItemService;
+
+    @Autowired
+    private BillingOrderValidations billingOrderValidations;
 
     @Override
     @Transactional
     public BillingOrder placeInstantOrder(Profile profile, Product product, int quantity) {
-        BillingOrder billingOrder = new BillingOrder();
+        // Validate inputs
+        billingOrderValidations.validateProfile(profile);
+        billingOrderValidations.validateProductStock(product, quantity);
 
-        if (product.getQuantityOnHand() < quantity) {
-            throw new IllegalStateException("Available stock for " + product.getName() + ": " + product.getQuantityOnHand());
-        }
+        // Proceed with order placement
+        BillingOrder billingOrder = new BillingOrder();
+        billingOrder.setProfile(profile);
+        billingOrder.setOrderDate(LocalDateTime.now());
+
+        // Reduce stock
         product.setQuantityOnHand(product.getQuantityOnHand() - quantity);
 
+        // Create and attach order item
         OrderItem orderItem = orderItemService.createNewOrderItem(billingOrder, product, quantity);
-        billingOrder.setProfile(profile);
         billingOrder.getItems().add(orderItem);
-        billingOrder.setOrderDate(LocalDateTime.now());
+
+        // Save order
         billingOrderRepository.save(billingOrder);
         return billingOrder;
     }
@@ -45,11 +55,13 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     @Override
     @Transactional
     public BillingOrder placeOrder(Profile profile) {
+        // Validate profile
+        billingOrderValidations.validateProfile(profile);
+
         List<CartItem> cartItems = cartItemRepository.findByProfileUsername(profile.getUsername());
 
-        if (cartItems.isEmpty()) {
-            throw new IllegalStateException("Cart is empty. Cannot place order.");
-        }
+        // Validate cart contents
+        billingOrderValidations.validateCartItems(cartItems);
 
         BillingOrder billingOrder = new BillingOrder();
         billingOrder.setProfile(profile);
@@ -58,15 +70,18 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         for (CartItem cartItem : cartItems) {
             Product product = cartItem.getProduct();
 
-            if (product.getQuantityOnHand() < cartItem.getQuantity()) {
-                throw new IllegalStateException("Available stock for " + product.getName() + ": " + product.getQuantityOnHand());
-            }
+            // Stock validation per item
+            billingOrderValidations.validateProductStock(product, cartItem.getQuantity());
 
+            // Reduce product stock
             product.setQuantityOnHand(product.getQuantityOnHand() - cartItem.getQuantity());
 
+            // Create and attach order item
             OrderItem orderItem = orderItemService.createNewOrderItem(billingOrder, product, cartItem.getQuantity());
             billingOrder.getItems().add(orderItem);
         }
+
+        // Save the final billing order and clear the cart
         billingOrderRepository.save(billingOrder);
         cartItemRepository.deleteByProfileUsername(profile.getUsername());
 
@@ -75,7 +90,13 @@ public class BillingOrderServiceImpl implements BillingOrderService {
 
     @Override
     public BillingOrder getOrderById(UUID billingOrderId) {
-        return billingOrderRepository.findById(billingOrderId).get();
+        Optional<BillingOrder> optionalOrder = billingOrderRepository.findById(billingOrderId);
+        BillingOrder order = optionalOrder.orElseThrow(() ->
+                new IllegalArgumentException("Order not found with ID: " + billingOrderId));
+
+        // Optional: validate existence
+        billingOrderValidations.validateOrderExists(order, billingOrderId.toString());
+        return order;
     }
 
     @Override
@@ -85,7 +106,10 @@ public class BillingOrderServiceImpl implements BillingOrderService {
 
     @Override
     public boolean cancelOrder(String username, UUID billingOrderId) {
-        BillingOrder billingOrder = billingOrderRepository.findById(billingOrderId).get();
+        Optional<BillingOrder> optionalOrder = billingOrderRepository.findById(billingOrderId);
+        BillingOrder billingOrder = optionalOrder.orElseThrow(() ->
+                new IllegalArgumentException("Order not found with ID: " + billingOrderId));
+
         billingOrder.setBillingOrderStatus(BillingOrderStatus.CANCELLED);
         billingOrderRepository.save(billingOrder);
         return true;
