@@ -7,6 +7,8 @@ import org.hibernate.service.spi.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.UUID;
 @Service
 public class ProfileServiceImpl implements ProfileService {
     private static final Logger logger = LoggerFactory.getLogger(ProfileServiceImpl.class);
+    private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private ProfileValidations profileValidations;
 
@@ -33,6 +36,7 @@ public class ProfileServiceImpl implements ProfileService {
         try{
             logger.info("Validating profile...");
             profileValidations.validateProfile(profile);
+            profile.setPassword(passwordEncoder.encode(profile.getPassword()));
             return profileRepository.save(profile);
         } catch (Exception exception) {
             logger.error("{}\nProfile creation failed!", exception.getMessage());
@@ -88,8 +92,8 @@ public class ProfileServiceImpl implements ProfileService {
             return profileRepository.findByUsername(username);
         } catch (Exception exception) {
             logger.error("User not found!");
+            throw new ServiceException("Username not found: " + username);
         }
-        return null;
     }
 
     @Override
