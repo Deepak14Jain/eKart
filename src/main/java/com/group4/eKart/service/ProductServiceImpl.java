@@ -48,6 +48,12 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public Product getPruductByName(String productName) {
+        logger.debug("Inside getPruductByName method");
+        return productRepository.findByName(productName);
+    }
+
+    @Override
     public List<Product> viewAllProducts() {
         logger.debug("Inside viewAllProducts method");
         return productRepository.findAll();

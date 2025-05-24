@@ -17,4 +17,5 @@ public interface ProfileService {
     public Profile findByUsername(String username);
     public boolean changePassword(UUID profileId, String oldPassword, String newPassword);
     public boolean deactivateAccount(UUID profileId, String password);
+    public boolean login(String username, String password);
 }

@@ -15,6 +15,7 @@ import java.util.UUID;
 public interface ProductService {
     public List<Product> getProductsByCategory(ProductCategory category);
     public Product getProductById(UUID productId);
+    public Product getPruductByName(String productName);
     public List<Product> viewAllProducts();
     public Product addProduct(Product product);
     public Product updateProduct(Product product);

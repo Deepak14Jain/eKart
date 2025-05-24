@@ -84,7 +84,12 @@ public class ProfileServiceImpl implements ProfileService {
     @Override
     public Profile findByUsername(String username) {
         logger.debug("Inside findByUsername method");
-        return profileRepository.findByUsername(username);
+        try{
+            return profileRepository.findByUsername(username);
+        } catch (Exception exception) {
+            logger.error("User not found!");
+        }
+        return null;
     }
 
     @Override
@@ -115,6 +120,18 @@ public class ProfileServiceImpl implements ProfileService {
             return true;
         }
         logger.error("Error deleting the account");
+        return false;
+    }
+
+    @Override
+    public boolean login(String username, String password) {
+        logger.debug("Inside login method");
+        Profile profile = findByUsername(username);
+        if (profile != null){
+            if (Objects.equals(profile.getPassword(), password))
+                return true;
+            return false;
+        }
         return false;
     }
 }
