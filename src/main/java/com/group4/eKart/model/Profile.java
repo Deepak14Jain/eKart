@@ -36,5 +36,5 @@ public class Profile {
     private Roles role;
 
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Feedback> feedbacks = new HashSet<>();;
+    private Set<Feedback> feedbacks = new HashSet<>();
 }

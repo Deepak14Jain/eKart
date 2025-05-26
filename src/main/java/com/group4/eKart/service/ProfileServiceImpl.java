@@ -74,18 +74,6 @@ public class ProfileServiceImpl implements ProfileService {
     }
 
     @Override
-    public boolean deleteProfile(UUID profileId) {
-        logger.debug("Inside deleteProfile method");
-        if (profileRepository.existsById(profileId)) {
-            profileRepository.deleteById(profileId);
-            logger.info("Profile deleted successfully");
-            return true;
-        }
-        logger.error("Profile not found");
-        return false;
-    }
-
-    @Override
     public Profile findByUsername(String username) {
         logger.debug("Inside findByUsername method");
         try{
@@ -119,7 +107,7 @@ public class ProfileServiceImpl implements ProfileService {
     public boolean deactivateAccount(UUID profileId, String password) {
         logger.debug("Inside deactivateAccount method");
         Profile profile = profileRepository.findById(profileId).get();
-        if (Objects.equals(profile.getPassword(), password)){
+        if (Objects.equals(profile.getPassword(), passwordEncoder.encode(password))){
             profileRepository.deleteById(profileId);
             return true;
         }

@@ -19,6 +19,9 @@ public class Feedback {
     @ManyToOne
     private Profile profile;
 
+    @ManyToOne
+    private Product product;
+
     @Column(nullable = false)
     private String comment;
 

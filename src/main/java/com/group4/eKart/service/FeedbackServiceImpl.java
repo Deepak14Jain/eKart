@@ -1,4 +1,6 @@
 package com.group4.eKart.service;
+import com.group4.eKart.model.Product;
+import com.group4.eKart.repository.ProductRepository;
 import com.group4.eKart.validator.FeedbackValidations;
 import com.group4.eKart.model.Feedback;
 import com.group4.eKart.model.Profile;
@@ -25,9 +27,12 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Autowired
     private FeedbackValidations feedbackValidations;
 
+    @Autowired
+    private ProductRepository productRepository;
+
     @Override
     @Transactional
-    public Feedback submitFeedback(Profile profile, String comment) {
+    public Feedback submitFeedback(Profile profile, Product product, String comment) {
         // Validate inputs
         feedbackValidations.validateProfile(profile);
         feedbackValidations.validateComment(comment);
@@ -37,10 +42,13 @@ public class FeedbackServiceImpl implements FeedbackService {
         newFeedback.setDate(LocalDateTime.now());
         newFeedback.setComment(comment);
         newFeedback.setProfile(profile);
+        newFeedback.setProduct(product);
 
         // Link feedback with user profile
         profile.getFeedbacks().add(newFeedback);
         profileRepository.save(profile); // Optional if cascade is enabled
+        product.getFeedbacks().add(newFeedback);
+        productRepository.save(product); // Optional if cascade is enabled
 
         return feedbackRepository.save(newFeedback);
     }
@@ -51,7 +59,7 @@ public class FeedbackServiceImpl implements FeedbackService {
     }
 
     @Override
-    public List<Feedback> getAllFeedback() {
-        return feedbackRepository.findAll();
+    public List<Feedback> getFeedbackByProduct(UUID productId) {
+        return feedbackRepository.findAllByProductProductId(productId);
     }
 }

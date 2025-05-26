@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
     List<Feedback> findAllByProfileProfileId(UUID profileId);
+    List<Feedback> findAllByProductProductId(UUID productId);
 }
