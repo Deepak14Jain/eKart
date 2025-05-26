@@ -2,8 +2,12 @@ package com.group4.eKart.controller;
 
 import com.group4.eKart.model.Product;
 import com.group4.eKart.service.ProductServiceImpl;
+import com.group4.eKart.dto.SalesSummaryDTO;
+import com.group4.eKart.model.TimeRange;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.List;
 import java.util.UUID;
@@ -33,8 +37,17 @@ public class AdminController {
     public Boolean deleteProduct(@PathVariable UUID productId) {
         return productService.deleteProduct(productId);
     }
-//    public List<SalesSummaryDTO> getSalesSummaryByProduct(TimeRange range);
-//    public List<SalesSummaryDTO> getSalesSummaryByCategory(TimeRange range);
+
+    @GetMapping("/products/getSalesSummaryByProduct/{timeRange}")
+    public List<SalesSummaryDTO> getSalesSummaryByProduct(@PathVariable TimeRange timeRange) {
+        return productService.getSalesSummaryByProduct(timeRange);
+    }
+
+    @GetMapping("/products/getSalesSummaryByCategory/{timeRange}")
+    public List<SalesSummaryDTO> getSalesSummaryByCategory(@RequestParam TimeRange timeRange) {
+        return productService.getSalesSummaryByCategory(timeRange);
+    }
+
 //    public Map<String, Object> getSalesReport(String period); // e.g., WEEK, MONTH
 //    public List<Product> getFastMovingProducts();
 //    public List<Product> getSlowMovingProducts();
