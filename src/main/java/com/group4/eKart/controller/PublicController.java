@@ -23,7 +23,8 @@ public class PublicController {
 
 
     @Autowired
-    ProfileServiceImpl profileService;
+    ProductServiceImpl productService;
+
 
     @GetMapping("/products/getAll")
     public List<Product> viewAllProducts() {
@@ -42,11 +43,16 @@ public class PublicController {
 
 
     @Autowired
-    ProductServiceImpl productService;
-
+    ProfileServiceImpl profileService;
+    
     @PostMapping("/profile/register")
     public Profile registerProfile(@RequestBody Profile newProfile) {
         return profileService.registerProfile(newProfile);
+    }
+
+    @PostMapping("/profile/login")
+    public boolean loginProfile(@RequestParam("username") String username, @RequestParam("password") String password) {
+        return profileService.login(username, password);
     }
 
 
