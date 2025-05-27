@@ -120,7 +120,7 @@ public class ProfileServiceImpl implements ProfileService {
         logger.debug("Inside login method");
         Profile profile = findByUsername(username);
         if (profile != null){
-            if (Objects.equals(profile.getPassword(), password))
+            if (Objects.equals(profile.getPassword(), passwordEncoder.encode(password)))
                 return true;
             return false;
         }
