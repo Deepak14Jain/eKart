@@ -6,6 +6,7 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
+@Table(name = "order_items")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -13,13 +14,15 @@ import java.util.UUID;
 public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID OrderItemId;
+    private UUID orderItemId;
 
     @ManyToOne
-    private Product product;
-
-    @ManyToOne
+    @JoinColumn(name = "billing_order_id", nullable = false) // Correct column name for billingOrder
     private BillingOrder billingOrder;
+
+    @ManyToOne
+    @JoinColumn(name = "product_id", nullable = false) // Correct column name for product
+    private Product product;
 
     @Column(nullable = false)
     private int quantity;

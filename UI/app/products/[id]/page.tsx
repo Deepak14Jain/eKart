@@ -48,9 +48,7 @@ export default function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addItem(product)
-    }
+    addItem(product, quantity) // Pass selected quantity
     toast({
       title: "🛒 Added to Cart!",
       description: `${quantity} ${quantity === 1 ? "item" : "items"} of ${product.name} added to your cart.`,

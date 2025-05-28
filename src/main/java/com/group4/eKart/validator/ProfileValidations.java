@@ -22,8 +22,14 @@ public class ProfileValidations {
     }
 
     public void validatePhone(String phoneNumber) {
-        if (!phoneNumber.isEmpty() && !phoneNumber.matches("^[0-9]{10}$")) {
+        if (phoneNumber != null && !phoneNumber.isEmpty() && !phoneNumber.matches("^[0-9]{10}$")) {
             throw new ServiceException("Phone number must be 10 digits.");
+        }
+    }
+
+    public void validateEmail(String email) {
+        if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+            throw new IllegalArgumentException("Invalid email format");
         }
     }
 
@@ -31,5 +37,6 @@ public class ProfileValidations {
         validateUsername(profile.getUsername());
         validatePhone(profile.getPhno());
         validatePassword(profile.getPassword());
+        validateEmail(profile.getEmail());
     }
 }

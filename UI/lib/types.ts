@@ -1,4 +1,5 @@
 export type Product = {
+  productId: string // Add productId property
   id: string
   name: string
   description: string
@@ -6,6 +7,7 @@ export type Product = {
   category: string
   stock: number
   image: string
+  quantityOnHand: number; // Add quantityOnHand property
 }
 
 export type Order = {

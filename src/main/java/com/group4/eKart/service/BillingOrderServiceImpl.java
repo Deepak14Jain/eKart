@@ -28,6 +28,9 @@ public class BillingOrderServiceImpl implements BillingOrderService {
     @Autowired
     private BillingOrderValidations billingOrderValidations;
 
+    @Autowired
+    private ProductService productService; // Add ProductService for saving products
+
     @Override
     @Transactional
     public BillingOrder placeInstantOrder(Profile profile, Product product, int quantity) {
@@ -67,6 +70,9 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         billingOrder.setProfile(profile);
         billingOrder.setOrderDate(LocalDateTime.now());
 
+        // Save the BillingOrder first
+        billingOrderRepository.save(billingOrder);
+
         for (CartItem cartItem : cartItems) {
             Product product = cartItem.getProduct();
 
@@ -75,14 +81,17 @@ public class BillingOrderServiceImpl implements BillingOrderService {
 
             // Reduce product stock
             product.setQuantityOnHand(product.getQuantityOnHand() - cartItem.getQuantity());
+            productService.saveProduct(product); // Save the updated product to persist changes
 
             // Create and attach order item
             OrderItem orderItem = orderItemService.createNewOrderItem(billingOrder, product, cartItem.getQuantity());
             billingOrder.getItems().add(orderItem);
         }
 
-        // Save the final billing order and clear the cart
+        // Save the final billing order with all items
         billingOrderRepository.save(billingOrder);
+
+        // Clear the cart
         cartItemRepository.deleteByProfileUsername(profile.getUsername());
 
         return billingOrder;

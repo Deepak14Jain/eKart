@@ -22,6 +22,7 @@ public interface ProductService {
     public Boolean deleteProduct(UUID productId);
     public List<SalesSummaryDTO> getSalesSummaryByProduct(TimeRange range);
     public List<SalesSummaryDTO> getSalesSummaryByCategory(TimeRange range);
+    public Product saveProduct(Product product); // Add saveProduct method
 //    public Map<String, Object> getSalesReport(String period); // e.g., WEEK, MONTH
 //    public List<Product> getFastMovingProducts();
 //    public List<Product> getSlowMovingProducts();

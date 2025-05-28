@@ -5,11 +5,11 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 @Entity
+@Table(name = "billing_orders")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -20,6 +20,7 @@ public class BillingOrder {
     private UUID billingOrderId;
 
     @ManyToOne
+    @JoinColumn(name = "profile_id", nullable = false) // Correct column name for profile
     private Profile profile;
 
     @Column(nullable = false)

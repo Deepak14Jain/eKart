@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Entity
+@Table(name = "products")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -29,6 +30,7 @@ public class Product {
     private int quantityOnHand;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "product_category") // Maps to the product_category column
     private ProductCategory productCategory;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)

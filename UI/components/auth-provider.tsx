@@ -31,58 +31,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check if user is logged in
     const storedUser = localStorage.getItem("user")
-    if (storedUser) {
+    const storedToken = localStorage.getItem("authToken") // Check for stored token
+    if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser))
     }
     setIsLoading(false)
   }, [])
 
   const login = async (email: string, password: string) => {
-    // In a real app, this would be an API call
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    try {
+      const response = await fetch("http://localhost:8080/customer/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: email, password }), // Add request body
+      })
 
-    // Check for hardcoded demo users first
-    if (email === "admin@example.com" && password === "admin123") {
-      const adminUser = {
-        id: "1",
-        name: "Admin User",
-        email: "admin@example.com",
-        role: "admin" as const,
+      if (response.ok) {
+        const data = await response.json()
+        const token = data.token // Assume the API returns a token
+        const user = {
+          id: data.id,
+          name: data.name,
+          email,
+          role: data.role,
+        }
+
+        localStorage.setItem("authToken", token) // Store the token
+        localStorage.setItem("user", JSON.stringify(user))
+        setUser(user)
+        setIsLoading(false)
+        return true
       }
-      setUser(adminUser)
-      localStorage.setItem("user", JSON.stringify(adminUser))
+      console.error("Login failed")
+    } catch (error) {
+      console.error("Login API call failed:", error)
+    } finally {
       setIsLoading(false)
-      return true
-    } else if (email === "user@example.com" && password === "user123") {
-      const customerUser = {
-        id: "2",
-        name: "Customer User",
-        email: "user@example.com",
-        role: "customer" as const,
-      }
-      setUser(customerUser)
-      localStorage.setItem("user", JSON.stringify(customerUser))
-      setIsLoading(false)
-      return true
     }
-
-    // Check for registered users in localStorage
-    const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]")
-    const registeredPasswords = JSON.parse(localStorage.getItem("userPasswords") || "{}")
-
-    const foundUser = registeredUsers.find((user: User) => user.email === email)
-
-    if (foundUser && registeredPasswords[email] === password) {
-      setUser(foundUser)
-      localStorage.setItem("user", JSON.stringify(foundUser))
-      setIsLoading(false)
-      return true
-    }
-
-    setIsLoading(false)
     return false
   }
 
@@ -127,6 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null)
     localStorage.removeItem("user")
+    localStorage.removeItem("authToken") // Remove the token on logout
     router.push("/")
   }
 

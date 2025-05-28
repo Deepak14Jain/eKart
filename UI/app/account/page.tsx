@@ -12,11 +12,13 @@ import { fetchOrdersByUserId, fetchAllFeedbacks } from "@/lib/data"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
+import { useCart } from "@/components/cart-provider"
 
 export default function AccountPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { user, logout } = useAuth()
+  const { fetchLatestCart } = useCart() // Access fetchLatestCart from CartProvider
 
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [editedName, setEditedName] = useState("")
@@ -50,6 +52,12 @@ export default function AccountPage() {
 
     if (user) {
       fetchFeedbacks()
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      fetchLatestCart() // Update cart when the page is opened
     }
   }, [user])
 

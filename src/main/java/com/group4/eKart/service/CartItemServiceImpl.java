@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -62,10 +63,10 @@ public class CartItemServiceImpl implements CartItemService {
     @Override
     public CartItem updateCartItem(UUID cartItemId, int newQuantity) {
         logger.debug("Inside updateCartItem method");
-        try{
+        try {
             CartItem updatedCartItem = getCartItemById(cartItemId);
             cartItemValidations.validateQuantity(newQuantity);
-            updatedCartItem.setQuantity(updatedCartItem.getQuantity()+newQuantity);
+            updatedCartItem.setQuantity(newQuantity); // Set the quantity directly
             cartItemRepository.save(updatedCartItem);
             return updatedCartItem;
         } catch (Exception exception) {
@@ -93,6 +94,7 @@ public class CartItemServiceImpl implements CartItemService {
     }
 
     @Override
+    @Transactional
     public boolean clearCart(String username) {
         logger.debug("Inside clearCart method");
         List<CartItem> items = cartItemRepository.findByProfileUsername(username);

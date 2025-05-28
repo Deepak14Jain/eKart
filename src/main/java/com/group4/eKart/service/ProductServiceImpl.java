@@ -125,7 +125,7 @@ public class ProductServiceImpl implements ProductService {
 //    public Map<String, Object> getSalesReport(String period) {
 //        return Map.of();
 //    }
-
+//
 //    @Override
 //    public List<Product> getFastMovingProducts() {
 //        return List.of();
@@ -145,5 +145,10 @@ public class ProductServiceImpl implements ProductService {
             case YEAR -> now.withDayOfYear(1);
             default -> now.minusYears(10); // fallback
         };
+    }
+
+    @Override
+    public Product saveProduct(Product product) {
+        return productRepository.save(product); // Save the product to the database
     }
 }

@@ -21,8 +21,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        try{
+        try {
             Profile profile = profileRepository.findByUsername(username);
+            if (profile == null) {
+                throw new UsernameNotFoundException("User not found: " + username);
+            }
             return User.withUsername(profile.getUsername())
                     .password(profile.getPassword())
                     .roles(profile.getRole().name())

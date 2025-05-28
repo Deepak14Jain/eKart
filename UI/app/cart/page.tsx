@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { ShoppingBag, ShoppingCart, User, LogOut, Trash, Plus, Minus, CheckCircle, Truck } from "lucide-react"
 import { orders } from "@/lib/data"
+import axios from "axios"
 
 export default function CartPage() {
   const router = useRouter()
@@ -21,7 +22,7 @@ export default function CartPage() {
   const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (!user) {
       toast({
         title: "Login Required",
@@ -34,8 +35,23 @@ export default function CartPage() {
 
     setIsProcessing(true)
 
-    setTimeout(() => {
-      const orderId = `o${orders.length + 1}`
+    try {
+      const orderItems = items.map((item) => ({
+        productId: item.product.productId, // Extract productId from item.product
+        quantity: item.quantity,          // Extract quantity directly
+      }))
+
+      const response = await axios.get(
+        "http://localhost:8080/customer/cartOrder",
+        // { items: orderItems }, // Send transformed items to the API
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        }
+      )
+
+      const orderId = response.data.orderId // Extract order ID from the response
 
       toast({
         title: "🎉 Order Placed Successfully!",
@@ -43,14 +59,22 @@ export default function CartPage() {
         className: "animate-bounce-in",
       })
 
-      clearCart()
-      setIsProcessing(false)
+      clearCart() // Clear the cart after successful order
       router.push("/account/orders")
-    }, 2000)
+    } catch (error) {
+      console.error("Failed to place order:", error)
+      toast({
+        title: "Order Failed",
+        description: "An error occurred while placing your order. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
-  const handleRemoveItem = (productId: string, productName: string) => {
-    removeItem(productId)
+  const handleRemoveItem = (cartItemId: string, productName: string) => {
+    removeItem(cartItemId) // Use cartItemId instead of productId
     toast({
       title: "Item Removed",
       description: `${productName} has been removed from your cart.`,
@@ -158,7 +182,7 @@ export default function CartPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)} // Pass item.quantity - 1
                               disabled={item.quantity <= 1}
                             >
                               <Minus className="h-4 w-4" />
@@ -168,8 +192,8 @@ export default function CartPage() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                              disabled={item.quantity >= item.product.stock}
+                              onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)} // Pass item.quantity + 1
+                              disabled={item.quantity >= item.product.quantityOnHand}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -178,7 +202,7 @@ export default function CartPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleRemoveItem(item.product.id, item.product.name)}
+                            onClick={() => handleRemoveItem(item.cartItemId, item.product.name)} // Pass cartItemId correctly
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash className="h-4 w-4" />

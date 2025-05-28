@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface FeedbackRepository extends JpaRepository<Feedback, UUID> {
-    List<Feedback> findAllByProfileProfileId(UUID profileId);
-    List<Feedback> findAllByProductProductId(UUID productId);
+    List<Feedback> findAllByProfileProfileId(UUID profileId); // Maps to profile_id
+    List<Feedback> findAllByProductProductId(UUID productId); // Maps to product_id
 }

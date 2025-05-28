@@ -2,7 +2,6 @@ package com.group4.eKart.controller.admin;
 
 import com.group4.eKart.model.Profile;
 import com.group4.eKart.service.ProfileServiceImpl;
-import com.group4.eKart.util.SecurityUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,6 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/admin")
 public class AdminProfileController {
     private static final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -48,13 +48,18 @@ public class AdminProfileController {
 
     @PostMapping("/login")
     public ResponseEntity<?> adminLogin(@RequestBody Map<String, String> loginRequest) {
-        String username = loginRequest.get("username");
-        String password = loginRequest.get("password");
-        Profile profile = profileService.findByUsername(username);
-        if (profile != null && "ADMIN".equalsIgnoreCase(profile.getRole().name())
-                && passwordEncoder.matches(password, profile.getPassword())) {
-            return ResponseEntity.ok(true);
+        try {
+            String username = loginRequest.get("username");
+            String password = loginRequest.get("password");
+            Profile profile = profileService.findByUsername(username);
+
+            if (profile != null && "ADMIN".equalsIgnoreCase(profile.getRole().name())
+                    && passwordEncoder.matches(password, profile.getPassword())) {
+                return ResponseEntity.ok("Login successful");
+            }
+            return ResponseEntity.status(401).body("Invalid credentials or unauthorized access");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("An error occurred during login: " + e.getMessage());
         }
-        return ResponseEntity.status(401).body(false);
     }
 }

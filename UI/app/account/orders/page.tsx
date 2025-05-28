@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -20,23 +20,29 @@ import {
   Clock,
   XCircle,
 } from "lucide-react"
-import { getOrdersByUserId, getProductById } from "@/lib/data"
+import { fetchOrdersByUserId, fetchProductById } from "@/lib/data"
 
 export default function OrdersPage() {
   const router = useRouter()
   const { user, logout } = useAuth()
+  const [userOrders, setUserOrders] = useState([])
 
   useEffect(() => {
     if (!user) {
       router.push("/login")
+    } else {
+      const fetchOrders = async () => {
+        const orders = await fetchOrdersByUserId() // Fetch orders asynchronously
+        setUserOrders(orders)
+      }
+
+      fetchOrders()
     }
   }, [user, router])
 
   if (!user) {
     return null
   }
-
-  const userOrders = getOrdersByUserId(user.id)
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -65,6 +71,16 @@ export default function OrdersPage() {
         return "bg-red-100 text-red-800 border-red-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const fetchProductDetails = async (productId: string) => {
+    try {
+      const product = await fetchProductById(productId) // Use fetchProductById to fetch product details
+      return product
+    } catch (error) {
+      console.error("Failed to fetch product details:", error)
+      return null
     }
   }
 
@@ -162,7 +178,7 @@ export default function OrdersPage() {
                     <CardContent className="p-0">
                       <div className="divide-y">
                         {order.items.map((item, index) => {
-                          const product = getProductById(item.productId)
+                          const product = fetchProductDetails(item.productId) // Fetch product details asynchronously
                           return (
                             <div key={`${item.productId}-${index}`} className="flex items-center gap-4 p-6">
                               <div className="w-20 h-20 relative rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
