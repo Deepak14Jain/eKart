@@ -1,5 +1,6 @@
 package com.group4.eKart.controller.customer;
 
+import com.group4.eKart.dto.OrderResponseDTO;
 import com.group4.eKart.model.BillingOrder;
 import com.group4.eKart.model.Product;
 import com.group4.eKart.model.Profile;
@@ -45,7 +46,7 @@ public class CustomerBillingOrderController {
     }
 
     @GetMapping("/getAllOrders")
-    public List<BillingOrder> viewMyOrders() {
+    public List<OrderResponseDTO> viewMyOrders() {
         return billingOrderService.getOrdersByProfile(SecurityUtil.getCurrentUsername());
     }
 

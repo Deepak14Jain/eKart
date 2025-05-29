@@ -1,5 +1,6 @@
 package com.group4.eKart.service;
 
+import com.group4.eKart.dto.OrderResponseDTO;
 import com.group4.eKart.model.*;
 import com.group4.eKart.repository.BillingOrderRepository;
 import com.group4.eKart.repository.CartItemRepository;
@@ -108,9 +109,33 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         return order;
     }
 
+    private OrderResponseDTO mapToOrderResponseDTO(BillingOrder order) {
+        OrderResponseDTO dto = new OrderResponseDTO();
+        dto.orderId = order.getBillingOrderId();
+        dto.orderDate = order.getOrderDate();
+        dto.status = order.getBillingOrderStatus().name();
+        dto.items = order.getItems().stream().map(item -> {
+            OrderResponseDTO.ItemDTO itemDTO = new OrderResponseDTO.ItemDTO();
+            itemDTO.productId = item.getProduct().getProductId();
+            itemDTO.productName = item.getProduct().getName();
+            itemDTO.quantity = item.getQuantity();
+            itemDTO.price = item.getPriceAtOrderTime();
+            return itemDTO;
+        }).toList();
+        dto.totalAmount = dto.items.stream().mapToDouble(i -> i.price * i.quantity).sum();
+        return dto;
+    }
+
     @Override
-    public List<BillingOrder> getOrdersByProfile(String username) {
-        return billingOrderRepository.findByProfileUsername(username);
+    public List<OrderResponseDTO> getOrdersByProfile(String username) {
+        List<BillingOrder> orders = billingOrderRepository.findByProfileUsername(username);
+        return orders.stream().map(this::mapToOrderResponseDTO).toList();
+    }
+
+    @Override
+    public List<OrderResponseDTO> getAllOrders() {
+        List<BillingOrder> orders = billingOrderRepository.findAll();
+        return orders.stream().map(this::mapToOrderResponseDTO).toList();
     }
 
     @Override
@@ -122,10 +147,5 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         billingOrder.setBillingOrderStatus(BillingOrderStatus.CANCELLED);
         billingOrderRepository.save(billingOrder);
         return true;
-    }
-
-    @Override
-    public List<BillingOrder> getAllOrders() {
-        return billingOrderRepository.findAll();
     }
 }

@@ -1,5 +1,6 @@
 package com.group4.eKart.controller.admin;
 
+import com.group4.eKart.dto.OrderResponseDTO;
 import com.group4.eKart.model.BillingOrder;
 import com.group4.eKart.service.BillingOrderServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ public class AdminBillingOrderController {
     }
 
     @GetMapping("/getOrdersByProfile/{username}")
-    public List<BillingOrder> viewOrdersByProfile(@PathVariable String username) {
+    public List<OrderResponseDTO> viewOrdersByProfile(@PathVariable String username) {
         return billingOrderService.getOrdersByProfile(username);
     }
 
@@ -31,7 +32,7 @@ public class AdminBillingOrderController {
     }
 
     @GetMapping("/getAllOrders")
-    public List<BillingOrder> viewAllOrders() {
+    public List<OrderResponseDTO> viewAllOrders() {
         return billingOrderService.getAllOrders();
     }
 }
