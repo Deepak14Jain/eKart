@@ -148,4 +148,9 @@ public class BillingOrderServiceImpl implements BillingOrderService {
         billingOrderRepository.save(billingOrder);
         return true;
     }
+
+    // Add this method
+    public List<BillingOrder> getBillingOrdersByProfileUsername(String username) {
+        return billingOrderRepository.findByProfileUsername(username);
+    }
 }

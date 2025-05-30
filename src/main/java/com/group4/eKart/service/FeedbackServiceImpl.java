@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -61,5 +63,17 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     public List<Feedback> getFeedbackByProduct(UUID productId) {
         return feedbackRepository.findAllByProductProductId(productId);
+    }
+
+    public Map<UUID, Feedback> getUserFeedbackForOrderedProducts(UUID profileId, List<UUID> orderedProductIds) {
+        List<Feedback> userFeedbacks = feedbackRepository.findAllByProfileProfileId(profileId);
+        Map<UUID, Feedback> feedbackMap = new HashMap<>();
+        for (Feedback feedback : userFeedbacks) {
+            UUID productId = feedback.getProduct() != null ? feedback.getProduct().getProductId() : null;
+            if (productId != null && orderedProductIds.contains(productId)) {
+                feedbackMap.put(productId, feedback);
+            }
+        }
+        return feedbackMap; // productId -> Feedback (if exists)
     }
 }
