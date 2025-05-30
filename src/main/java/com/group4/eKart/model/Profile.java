@@ -1,11 +1,9 @@
 package com.group4.eKart.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.stereotype.Indexed;
-
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -23,24 +21,25 @@ public class Profile {
     private String username; // Keep username for login purposes
 
     @Column(unique = true, nullable = false)
-    private String email; // Add email field
+    private String email;
 
     @Column(nullable = false)
     private String password;
 
     @Column(nullable = false)
-    private String name; // Full name
+    private String name;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Roles role;
 
     @Column(nullable = false)
-    private String phno; // Phone number
+    private String phno;
 
     @Column(nullable = false)
-    private String address; // Address
+    private String address; // Address    @Column(nullable = false)
 
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Feedback> feedbacks = new HashSet<>();
+    @JsonIgnore
+    private List<Feedback> feedbacks;
 }

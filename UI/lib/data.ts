@@ -69,6 +69,17 @@ export async function fetchProductById(productId: string) {
   }
 }
 
+// Synchronous getProductById for local/mock data (for use in [id]/page.tsx)
+export function getProductById(productId: string) {
+  // If you have a local products array, use it. Otherwise, return null.
+  // Example:
+  // import { products } from "./mock-data"
+  // return products.find((p) => p.id === productId || p.productId === productId) || null;
+
+  // Placeholder: always return null if you don't have local data
+  return null;
+}
+
 // Fetch orders for the authenticated user
 export async function fetchOrdersByUserId() {
   try {

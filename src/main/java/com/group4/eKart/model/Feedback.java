@@ -1,5 +1,7 @@
 package com.group4.eKart.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,19 +20,22 @@ public class Feedback {
     private UUID feedbackId;
 
     @ManyToOne
-    @JoinColumn(name = "profile_id") // Maps to the profile_id column
+    @JoinColumn(name = "profile_id")
+    @JsonBackReference
     private Profile profile;
 
     @ManyToOne
-    @JoinColumn(name = "product_id") // Maps to the product_id column
+    @JoinColumn(name = "product_id")
+    @JsonIgnore
     private Product product;
 
     @Column(nullable = false)
     private String comment;
 
     @Column(nullable = false)
-    private LocalDateTime date; // Ensure this field is mapped correctly
+    private LocalDateTime date;
 
     @Column
-    private Integer rating; // Optional rating field
+    private Integer rating;
 }
+

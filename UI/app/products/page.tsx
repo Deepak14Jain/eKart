@@ -13,7 +13,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, ShoppingCart, User, Search, LogOut, Star, Heart, Zap } from "lucide-react"
+import { ShoppingBag, ShoppingCart, User, Search, LogOut, Star, Zap } from "lucide-react"
 import { fetchProducts, fetchProductsByCategory } from "@/lib/data"
 import type { Product } from "@/lib/types"
 
@@ -187,7 +187,7 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredProducts.map((product) => (
                     <Card
-                      key={product.id}
+                      key={product.productId} // Ensure the key is unique by using productId
                       className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white"
                     >
                       <div className="relative">
@@ -201,13 +201,7 @@ export default function ProductsPage() {
                             />
                           </div>
                         </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute top-2 right-2 bg-white/80 hover:bg-white text-gray-600 hover:text-red-500 transition-colors"
-                        >
-                          <Heart className="h-4 w-4" />
-                        </Button>
+
                         {product.stock < 10 && (
                           <Badge className="absolute top-2 left-2 bg-accent text-white">
                             <Zap className="h-3 w-3 mr-1" />

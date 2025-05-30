@@ -4,6 +4,7 @@ import type React from "react"
 
 import { createContext, useContext, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import axios from "axios"
 
 type User = {
   id: string
@@ -42,16 +43,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true)
 
     try {
-      const response = await fetch("http://localhost:8080/customer/login", {
-        method: "POST",
+      // Add debug log before axios call
+      console.log("Attempting login axios POST to backend...", { email, password })
+
+      const response = await axios.post("http://localhost:8080/customer/login", {
+        username: email,
+        password,
+      }, {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username: email, password }), // Add request body
+        timeout: 8000,
       })
 
-      if (response.ok) {
-        const data = await response.json()
+      // Add debug log after axios call
+      console.log("Login axios POST completed", response)
+
+      if (response.status === 200 && response.data) {
+        const data = response.data
         const token = data.token // Assume the API returns a token
         const user = {
           id: data.id,
@@ -67,8 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true
       }
       console.error("Login failed")
-    } catch (error) {
+    } catch (error: any) {
+      // Add debug log for error
       console.error("Login API call failed:", error)
+      alert("Login API call failed: " + (error?.message || error))
     } finally {
       setIsLoading(false)
     }

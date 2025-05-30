@@ -8,11 +8,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ShoppingBag, ShoppingCart, User, LogOut, Package, MessageSquare, Star } from "lucide-react"
-import { fetchOrdersByUserId, fetchAllFeedbacks } from "@/lib/data"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { useCart } from "@/components/cart-provider"
+import axios from "axios"
+
+// Add a type for product feedback items
+type ProductFeedbackItem = {
+  productId: string
+  productName: string
+  // Optionally, add other fields if needed
+}
 
 export default function AccountPage() {
   const router = useRouter()
@@ -25,7 +32,14 @@ export default function AccountPage() {
   const [editedEmail, setEditedEmail] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [userOrders, setUserOrders] = useState([])
-  const [userFeedbacks, setUserFeedbacks] = useState([])
+  const [productsWithoutFeedback, setProductsWithoutFeedback] = useState<ProductFeedbackItem[]>([])
+  const [productsWithFeedback, setProductsWithFeedback] = useState<ProductFeedbackItem[]>([])
+  const [feedbacks, setFeedbacks] = useState<{ [productId: string]: string }>({})
+  const [feedbackInputs, setFeedbackInputs] = useState<{ [productId: string]: string }>({})
+  const [submitting, setSubmitting] = useState<{ [productId: string]: boolean }>({})
+  const [feedbackRatings, setFeedbackRatings] = useState<{ [productId: string]: number }>({})
+  const [ratingInputs, setRatingInputs] = useState<{ [productId: string]: number }>({})
+  const [productDetailsMap, setProductDetailsMap] = useState<{ [productId: string]: any }>({})
 
   useEffect(() => {
     if (!user) {
@@ -35,31 +49,272 @@ export default function AccountPage() {
       setEditedEmail(user.email)
 
       const fetchOrders = async () => {
-        const orders = await fetchOrdersByUserId() // Removed userId parameter
-        setUserOrders(orders)
+        try {
+          const response = await axios.get(
+            "http://localhost:8080/customer/getAllOrders",
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+              },
+            }
+          )
+          setUserOrders(response.data)
+        } catch (error) {
+          console.error("Failed to fetch orders:", error)
+          toast({
+            title: "Error fetching orders",
+            description: "Please try again later.",
+            variant: "destructive",
+          })
+        }
       }
-
       fetchOrders()
     }
-  }, [user, router])
-
-  useEffect(() => {
-    const fetchFeedbacks = async () => {
-      const allFeedbacks = await fetchAllFeedbacks()
-      const filteredFeedbacks = allFeedbacks.filter((feedback) => feedback.profile.profileId === user.id)
-      setUserFeedbacks(filteredFeedbacks)
-    }
-
-    if (user) {
-      fetchFeedbacks()
-    }
-  }, [user])
+  }, [user, router, toast])
 
   useEffect(() => {
     if (user) {
       fetchLatestCart() // Update cart when the page is opened
     }
   }, [user])
+
+  useEffect(() => {
+    if (!user) {
+      console.log("User not logged in, redirecting to login page.");
+      router.push("/login");
+      return;
+    }
+
+    const fetchProductsWithoutFeedback = async () => {
+      try {
+        console.log("Fetching products without feedback...");
+        const response = await fetch("http://localhost:8080/customer/productsWithoutFeedback", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        });
+        const productIds = await response.json();
+        console.log("Product IDs without feedback fetched:", productIds);
+
+        const products = productIds
+          .map((productId: string) => productDetailsMap[productId])
+          .filter((product) => product !== undefined);
+        console.log("Mapped products without feedback:", products);
+        setProductsWithoutFeedback(products || []);
+      } catch (error) {
+        console.error("Error fetching products without feedback:", error);
+        setProductsWithoutFeedback([]);
+      }
+    };
+
+    if (Object.keys(productDetailsMap).length > 0) {
+      fetchProductsWithoutFeedback();
+    } else {
+      console.log("Waiting for productDetailsMap to be populated...");
+    }
+
+    console.log("Fetching all orders...");
+    axios
+      .get("http://localhost:8080/customer/getAllOrders", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+        },
+      })
+      .then((res) => {
+        console.log("Orders fetched successfully:", res.data);
+        const allProducts = res.data.flatMap((order: any) =>
+          order.items.map((item: any) => ({
+            productId: item.productId,
+            productName: item.productName,
+          }))
+        );
+        const uniqueProducts = Array.from(
+          new Map(allProducts.map((p: ProductFeedbackItem) => [p.productId, p])).values()
+        );
+        console.log("Unique products extracted:", uniqueProducts);
+
+        Promise.all(
+          uniqueProducts.map(async (product) => {
+            const resp = await fetch(
+              `http://localhost:8080/customer/hasFeedback?productId=${product.productId}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+                },
+              }
+            );
+            const hasFeedback = await resp.json();
+            console.log(`Feedback status for product ${product.productId}:`, hasFeedback);
+            return hasFeedback ? product : null;
+          })
+        ).then((results) => {
+          const filteredResults = results.filter(Boolean) as ProductFeedbackItem[];
+          console.log("Products with feedback:", filteredResults);
+          setProductsWithFeedback(filteredResults);
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to fetch orders or products:", error);
+        setProductsWithFeedback([]);
+      });
+  }, [user, productDetailsMap])
+
+  useEffect(() => {
+    if (user) {
+      console.log("Fetching all orders to build product details map...");
+      axios
+        .get("http://localhost:8080/customer/getAllOrders", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        })
+        .then((res) => {
+          console.log("Orders fetched for product details map:", res.data);
+          const details: { [productId: string]: any } = {};
+          res.data.forEach((order: any) => {
+            order.items.forEach((item: any) => {
+              details[item.productId] = {
+                productId: item.productId,
+                productName: item.productName,
+                quantity: item.quantity,
+                price: item.price,
+                description: item.description || "No description available",
+              };
+            });
+          });
+          console.log("Product details map built:", details);
+          setProductDetailsMap(details);
+        })
+        .catch((error) => {
+          console.error("Failed to fetch product details:", error);
+          setProductDetailsMap({});
+        });
+    }
+  }, [user])
+
+  // Fetch feedbacks for products with feedback (now also fetch rating)
+  useEffect(() => {
+    const fetchFeedbacks = async () => {
+      const result: { [productId: string]: string } = {}
+      const ratings: { [productId: string]: number } = {}
+      await Promise.all(productsWithFeedback.map(async (product) => {
+        // Simulate fetching feedback comment and rating from localStorage
+        const stored = localStorage.getItem(`feedback_${product.productId}`)
+        const storedRating = localStorage.getItem(`feedback_rating_${product.productId}`)
+        if (stored) result[product.productId] = stored
+        else result[product.productId] = "Feedback submitted."
+        if (storedRating) ratings[product.productId] = parseInt(storedRating)
+      }))
+      setFeedbacks(result)
+      setFeedbackRatings(ratings)
+    }
+    if (productsWithFeedback.length > 0) fetchFeedbacks()
+  }, [productsWithFeedback])
+
+  // Initialize ratingInputs to 5 for all products needing feedback
+  useEffect(() => {
+    if (productsWithoutFeedback.length > 0) {
+      setRatingInputs((prev) => {
+        const updated = { ...prev }
+        productsWithoutFeedback.forEach((product) => {
+          if (updated[product.productId] === undefined) {
+            updated[product.productId] = 5
+          }
+        })
+        return updated
+      })
+    }
+  }, [productsWithoutFeedback])
+
+  const handleFeedbackInput = (productId: string, value: string) => {
+    setFeedbackInputs((prev) => ({ ...prev, [productId]: value }))
+  }
+
+  const handleRatingInput = (productId: string, value: number) => {
+    setRatingInputs((prev) => ({ ...prev, [productId]: value }))
+  }
+
+  const handleSubmitFeedback = async (productId: string) => {
+    setSubmitting((prev) => ({ ...prev, [productId]: false }));
+
+    // Only keep essential validation and API call
+    const comment = feedbackInputs[productId];
+    const rating = ratingInputs[productId] ?? 5;
+
+    if (!comment || !comment.trim()) {
+      toast({ title: "Feedback required", description: "Please enter your feedback.", variant: "destructive" });
+      return;
+    }
+
+    setSubmitting((prev) => ({ ...prev, [productId]: true }));
+
+    try {
+      let response;
+      try {
+        response = await axios.post(
+          `http://localhost:8080/customer/submitFeedback?productId=${encodeURIComponent(productId)}&comment=${encodeURIComponent(comment)}&rating=${encodeURIComponent(rating)}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            },
+            timeout: 8000,
+          }
+        );
+      } catch (err: any) {
+        toast({
+          title: "Network Error",
+          description: err?.message || "Could not reach the server. Please try again.",
+          variant: "destructive",
+        });
+        setSubmitting((prev) => ({ ...prev, [productId]: false }));
+        return;
+      }
+
+      if (response.status !== 200) {
+        toast({ title: "Error", description: response.data || "Failed to submit feedback.", variant: "destructive" });
+        throw new Error(`Failed to submit feedback: ${response.statusText}`);
+      }
+
+      toast({ title: "Feedback submitted", description: "Thank you for your feedback!" });
+
+      setProductsWithoutFeedback((prev) => prev.filter((p) => p.productId !== productId));
+      localStorage.setItem(`feedback_${productId}`, comment);
+      localStorage.setItem(`feedback_rating_${productId}`, rating.toString());
+
+      setProductsWithFeedback((prev) => [
+        ...prev,
+        {
+          productId,
+          productName: productDetailsMap[productId]?.productName || "",
+        },
+      ]);
+
+      setFeedbackInputs((prev) => ({ ...prev, [productId]: "" }));
+      setRatingInputs((prev) => ({ ...prev, [productId]: 5 }));
+    } catch (error: any) {
+      toast({ title: "Error", description: error?.message || "Failed to submit feedback. Please try again.", variant: "destructive" });
+    }
+
+    setSubmitting((prev) => ({ ...prev, [productId]: false }));
+  }
+
+  // Debugging: Ensure the button's onClick handler is correctly bound
+  const renderFeedbackButton = (productId: string) => {
+    console.log(`Rendering Submit Feedback button for product: ${productId}`); // Debugging log
+    return (
+      <Button
+        type="button"
+        onClick={() => {
+          console.log(`Submit Feedback button clicked for product: ${productId}`); // Debugging log
+          handleSubmitFeedback(productId);
+        }}
+        disabled={submitting[productId]}
+      >
+        {submitting[productId] ? "Submitting..." : "Submit Feedback"}
+      </Button>
+    );
+  };
 
   if (!user) {
     return null
@@ -226,30 +481,33 @@ export default function AccountPage() {
                   ) : (
                     <div className="space-y-4">
                       {userOrders.map((order) => (
-                        <div key={order.id} className="border rounded-lg p-4">
+                        <div key={order.orderId} className="border rounded-lg p-4">
                           <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
                             <div>
-                              <h3 className="font-medium">Order #{order.id}</h3>
+                              <h3 className="font-medium">Order #{order.orderId}</h3>
                               <p className="text-sm text-muted-foreground">
-                                {new Date(order.createdAt).toLocaleDateString()}
+                                {new Date(order.orderDate).toLocaleDateString()}
                               </p>
                             </div>
                             <div className="flex items-center">
                               <span
                                 className={`inline-block px-2 py-1 text-xs font-semibold rounded 
-                                ${
-                                  order.status === "delivered"
-                                    ? "bg-green-100 text-green-800"
-                                    : order.status === "shipped"
+                                  ${
+                                    order.status.toLowerCase() === "delivered"
+                                      ? "bg-green-100 text-green-800"
+                                      : order.status.toLowerCase() === "shipped"
                                       ? "bg-blue-100 text-blue-800"
-                                      : order.status === "processing"
-                                        ? "bg-yellow-100 text-yellow-800"
-                                        : order.status === "cancelled"
-                                          ? "bg-red-100 text-red-800"
-                                          : "bg-gray-100 text-gray-800"
-                                }`}
+                                      : order.status.toLowerCase() === "processing"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : order.status.toLowerCase() === "cancelled"
+                                      ? "bg-red-100 text-red-800"
+                                      : order.status.toLowerCase() === "pending"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }
+                                `}
                               >
-                                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                {order.status.charAt(0).toUpperCase() + order.status.slice(1).toLowerCase()}
                               </span>
                             </div>
                           </div>
@@ -279,18 +537,78 @@ export default function AccountPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>My Feedback</CardTitle>
-                  <CardDescription>View your submitted feedback and share new thoughts</CardDescription>
+                  <CardDescription>
+                    View your submitted feedback and share new thoughts for products you've ordered.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {userFeedbacks.length > 0 ? (
-                    <div className="space-y-4 mb-6">
+                  {/* Products needing feedback */}
+                  {productsWithoutFeedback.length > 0 && (
+                    <div className="mb-8">
+                      <h4 className="font-medium mb-2">Products awaiting your feedback:</h4>
+                      <div className="space-y-4">
+                        {productsWithoutFeedback.map((product) => {
+                          const details = productDetailsMap[product.productId];
+                          return (
+                            <div key={product.productId} className="border rounded-lg p-4 flex flex-col gap-2">
+                              <div>
+                                <span className="font-semibold">Product: </span>
+                                <span className="font-semibold text-primary">
+                                  {details?.productName || "Unknown Product"}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 mb-2">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={`${product.productId}-star-input-${star}`}
+                                    className={`h-6 w-6 cursor-pointer ${
+                                      (ratingInputs[product.productId] ?? 5) >= star
+                                        ? "fill-primary text-primary"
+                                        : "text-muted-foreground"
+                                    }`}
+                                    onClick={() => handleRatingInput(product.productId, star)}
+                                  />
+                                ))}
+                              </div>
+                              <textarea
+                                className="border rounded p-2"
+                                rows={2}
+                                placeholder="Write your feedback..."
+                                value={feedbackInputs[product.productId] || ""}
+                                onChange={(e) => handleFeedbackInput(product.productId, e.target.value)}
+                                disabled={submitting[product.productId]}
+                              />
+                              {renderFeedbackButton(product.productId)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {/* Products with feedback */}
+                  {productsWithFeedback.length > 0 ? (
+                    <div className="space-y-4">
                       <h4 className="font-medium">Your Previous Feedback:</h4>
-                      {userFeedbacks.map((feedback) => (
-                        <div key={feedback.feedbackId}>
-                          <p>{feedback.comment}</p>
-                          <span>{new Date(feedback.date).toLocaleDateString()}</span>
-                        </div>
-                      ))}
+                      {productsWithFeedback.map((product) => {
+                        const details = productDetailsMap[product.productId];
+                        const rating = feedbackRatings[product.productId] || 5;
+                        return (
+                          <div key={product.productId} className="border rounded-lg p-4 flex flex-col gap-1">
+                            <span className="font-semibold">{details?.productName || "Unknown Product"}</span>
+                            <div className="flex items-center gap-1 mb-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <Star
+                                  key={`${product.productId}-star-display-${star}`}
+                                  className={`h-5 w-5 ${
+                                    rating >= star ? "fill-primary text-primary" : "text-muted-foreground"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-muted-foreground">{feedbacks[product.productId]}</span>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p>No feedbacks found.</p>
@@ -299,13 +617,7 @@ export default function AccountPage() {
                 <CardFooter>
                   <div className="text-center py-6 border-t">
                     <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Submit New Feedback</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Your feedback helps us improve our products and services.
-                    </p>
-                    <Link href="/feedback">
-                      <Button>Submit Feedback</Button>
-                    </Link>
+                    <h3 className="text-lg font-medium mb-2">Thank you for helping us improve!</h3>
                   </div>
                 </CardFooter>
               </Card>

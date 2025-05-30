@@ -26,7 +26,11 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
+      // Debug log before login
+      console.log("Calling login with", { email, password })
       const success = await login(email, password)
+      // Debug log after login
+      console.log("Login result:", success)
 
       if (success) {
         toast({
@@ -48,6 +52,7 @@ export default function LoginPage() {
         })
       }
     } catch (error) {
+      console.error("Login error in handleSubmit:", error)
       toast({
         title: "Login failed",
         description: "An error occurred during login. Please try again.",

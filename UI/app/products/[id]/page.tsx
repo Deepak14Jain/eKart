@@ -19,7 +19,6 @@ import {
   Minus,
   Plus,
   Star,
-  Heart,
   Truck,
   Shield,
   RotateCcw,
@@ -123,7 +122,6 @@ export default function ProductDetailPage() {
                   size="icon"
                   className="absolute top-4 right-4 bg-white/80 hover:bg-white text-gray-600 hover:text-red-500"
                 >
-                  <Heart className="h-5 w-5" />
                 </Button>
               </div>
             </div>

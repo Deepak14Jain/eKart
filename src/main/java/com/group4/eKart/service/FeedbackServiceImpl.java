@@ -38,26 +38,20 @@ public class FeedbackServiceImpl implements FeedbackService {
         return submitFeedback(profile, product, comment, null); // Delegate to new method
     }
 
+    @Override
     @Transactional
     public Feedback submitFeedback(Profile profile, Product product, String comment, Integer rating) {
-        // Validate inputs
         feedbackValidations.validateProfile(profile);
         feedbackValidations.validateComment(comment);
 
-        // Create and save feedback
         Feedback newFeedback = new Feedback();
         newFeedback.setDate(LocalDateTime.now());
         newFeedback.setComment(comment);
         newFeedback.setProfile(profile);
         newFeedback.setProduct(product);
-        newFeedback.setRating(rating); // Set rating if provided
+        newFeedback.setRating(rating);
 
-        // Link feedback with user profile
-        profile.getFeedbacks().add(newFeedback);
-        profileRepository.save(profile); // Optional if cascade is enabled
-        product.getFeedbacks().add(newFeedback);
-        productRepository.save(product); // Optional if cascade is enabled
-
+        // Only save feedback, do not save profile/product or add to their lists
         return feedbackRepository.save(newFeedback);
     }
 
