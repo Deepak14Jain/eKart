@@ -39,11 +39,16 @@ public class CustomerFeedbackController {
     BillingOrderServiceImpl billingOrderService;
 
     @PostMapping("/submitFeedback")
-    public Feedback submitFeedback(@RequestParam("productId") UUID productId, @RequestParam("comment") String comment) {
+    public Feedback submitFeedback(
+            @RequestParam("productId") UUID productId,
+            @RequestParam("comment") String comment,
+            @RequestParam(value = "rating", required = false) Integer rating // Accept rating as optional
+    ) {
         return feedbackService.submitFeedback(
             profileService.findByUsername(SecurityUtil.getCurrentUsername()),
             productService.getProductById(productId),
-            comment
+            comment,
+            rating
         );
     }
 

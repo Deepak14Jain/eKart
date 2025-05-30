@@ -35,6 +35,11 @@ public class FeedbackServiceImpl implements FeedbackService {
     @Override
     @Transactional
     public Feedback submitFeedback(Profile profile, Product product, String comment) {
+        return submitFeedback(profile, product, comment, null); // Delegate to new method
+    }
+
+    @Transactional
+    public Feedback submitFeedback(Profile profile, Product product, String comment, Integer rating) {
         // Validate inputs
         feedbackValidations.validateProfile(profile);
         feedbackValidations.validateComment(comment);
@@ -45,6 +50,7 @@ public class FeedbackServiceImpl implements FeedbackService {
         newFeedback.setComment(comment);
         newFeedback.setProfile(profile);
         newFeedback.setProduct(product);
+        newFeedback.setRating(rating); // Set rating if provided
 
         // Link feedback with user profile
         profile.getFeedbacks().add(newFeedback);

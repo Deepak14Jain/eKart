@@ -11,6 +11,7 @@ import java.util.UUID;
 @Service
 public interface FeedbackService {
     public Feedback submitFeedback(Profile profile, Product product, String comment);
+    public Feedback submitFeedback(Profile profile, Product product, String comment, Integer rating);
     public List<Feedback> getFeedbackByUser(UUID userId);
     public List<Feedback> getFeedbackByProduct(UUID productId);
 }
