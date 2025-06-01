@@ -10,7 +10,11 @@ type User = {
   id: string
   name: string
   email: string
-  role: "admin" | "customer"
+  role: string // allow any string, not just "admin" | "customer"
+  username?: string
+  address?: string
+  phoneNumber?: string
+  profileId?: string
 }
 
 type AuthContextType = {
@@ -41,7 +45,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     setIsLoading(true)
-
     try {
       // Add debug log before axios call
       console.log("Attempting login axios POST to backend...", { email, password })
@@ -61,15 +64,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (response.status === 200 && response.data) {
         const data = response.data
-        const token = data.token // Assume the API returns a token
+        const token = data.token
         const user = {
-          id: data.id,
-          name: data.name,
-          email,
-          role: data.role,
+          id: data.email,
+          username: data.username,
+          email: data.email,
+          role: data.role, // do not lowercase here, keep as returned by API
+          address: data.address || "",
+          phoneNumber: data.phoneNumber || "",
+          name: data.name || "",
+          profileId: data.profileId || "",
         }
-
-        localStorage.setItem("authToken", token) // Store the token
+        localStorage.setItem("authToken", token)
         localStorage.setItem("user", JSON.stringify(user))
         setUser(user)
         setIsLoading(false)

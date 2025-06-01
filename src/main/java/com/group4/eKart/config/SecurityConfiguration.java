@@ -21,6 +21,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -49,7 +50,9 @@ public class SecurityConfiguration {
         return http
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(request -> request
-                        .requestMatchers("/customer/login").permitAll() // Allow unauthenticated access
+                        .requestMatchers("/customer/login").permitAll()
+                        .requestMatchers("/admin/login").permitAll()
+                        .requestMatchers("/product-images/**").permitAll() // Allow access to product images
                         .requestMatchers("/customer/**").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().permitAll())
@@ -59,15 +62,28 @@ public class SecurityConfiguration {
                             throws IOException, ServletException {
                         String header = request.getHeader("Authorization");
                         if (header != null && header.startsWith("Bearer ")) {
-                            String token = header.substring(7);
-                            Claims claims = Jwts.parserBuilder()
-                                    .setSigningKey(JwtUtil.getSecretKey())
-                                    .build()
-                                    .parseClaimsJws(token)
-                                    .getBody();
-                            String username = claims.getSubject();
-                            SecurityContextHolder.getContext().setAuthentication(
-                                    new UsernamePasswordAuthenticationToken(username, null, List.of()));
+                            try {
+                                String token = header.substring(7);
+                                Claims claims = Jwts.parserBuilder()
+                                        .setSigningKey(JwtUtil.getSecretKey())
+                                        .build()
+                                        .parseClaimsJws(token)
+                                        .getBody();
+
+                                String username = claims.getSubject();
+                                String role = claims.get("role", String.class);
+
+                                if (username != null && role != null) {
+                                    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                                    SecurityContextHolder.getContext().setAuthentication(
+                                            new UsernamePasswordAuthenticationToken(username, null, authorities));
+                                }
+                            } catch (Exception e) {
+                                // Invalid token: clear context and return 403
+                                SecurityContextHolder.clearContext();
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                return;
+                            }
                         }
                         chain.doFilter(request, response);
                     }

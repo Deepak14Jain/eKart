@@ -16,5 +16,6 @@ public class OrderResponseDTO {
         public String productName;
         public int quantity;
         public double price;
+        public String imagePath; // New field for image path
     }
 }

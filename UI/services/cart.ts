@@ -4,12 +4,17 @@ const API_BASE_URL = "http://localhost:8080";
 
 // Fetch the cart items for the authenticated user
 export async function fetchCart() {
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    console.warn("No auth token found, skipping fetchCart.");
+    return [];
+  }
   try {
     const response = await axios.get(
       `${API_BASE_URL}/customer/getCartByProfile`,
       {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          Authorization: `Bearer ${token}`,
         },
       }
     );

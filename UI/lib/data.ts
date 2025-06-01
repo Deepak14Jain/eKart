@@ -21,13 +21,17 @@ async function retryRequest(requestFn: () => Promise<any>, retries: number = 3, 
 // Centralized error handler
 function handleApiError(error: any, fallbackMessage: string) {
   if (axios.isAxiosError(error)) {
-    console.error("API Error:", error.message);
-    if (error.response) {
-      console.error("Response Data:", error.response.data);
-      console.error("Response Status:", error.response.status);
-      console.error("Response Headers:", error.response.headers);
-    } else if (error.request) {
-      console.error("No response received:", error.request);
+    if (error.response?.status === 403) {
+      console.error("API Error: 403 Forbidden. Ensure the request includes a valid token and you have the necessary permissions.");
+    } else {
+      console.error("API Error:", error.message);
+      if (error.response) {
+        console.error("Response Data:", error.response.data);
+        console.error("Response Status:", error.response.status);
+        console.error("Response Headers:", error.response.headers);
+      } else if (error.request) {
+        console.error("No response received:", error.request);
+      }
     }
   } else {
     console.error("Unexpected Error:", error);
@@ -139,11 +143,25 @@ export async function fetchAllFeedbacks() {
 // Fetch sales data by period
 export async function fetchSalesByPeriod(period: string) {
   try {
-    return await retryRequest(() =>
-      axios.get(`${API_BASE_URL}/admin/products/getSalesSummaryByProduct/${period}`).then((res) => res.data)
-    );
+    console.log(`Fetching sales data for period: ${period}`) // Debug log
+    const response = await retryRequest(() =>
+      axios.get(`${API_BASE_URL}/admin/products/getSalesSummaryByProduct/${period}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Ensure token is included
+        },
+      }).then((res) => res.data)
+    )
+    console.log(`Sales data for period ${period}:`, response) // Debug log
+    return response
   } catch (error) {
-    handleApiError(error, `Failed to fetch sales data for period ${period}. Please try again later.`);
+    if (axios.isAxiosError(error)) {
+      console.error("API Error Details:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      })
+    }
+    handleApiError(error, `Failed to fetch sales data for period ${period}. Please try again later.`)
   }
 }
 

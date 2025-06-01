@@ -3,7 +3,6 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { useSearchParams } from "next/navigation"
 import { useAuth } from "@/components/auth-provider"
 import { useCart } from "@/components/cart-provider"
@@ -23,41 +22,58 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || "all")
   const [searchQuery, setSearchQuery] = useState("")
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [allProducts, setAllProducts] = useState<Product[]>([])
   const { user, logout } = useAuth()
   const { addItem, totalItems } = useCart()
   const { toast } = useToast()
 
   useEffect(() => {
     const fetchData = async () => {
-      let products = await fetchProducts()
-      if (categoryParam && categoryParam !== "all") {
-        products = await fetchProductsByCategory(categoryParam)
-      }
-      setFilteredProducts(products)
+      const products = await fetchProducts()
+      setAllProducts(products)
+      setFilteredProducts(
+        selectedCategory === "all"
+          ? products
+          : products.filter(
+              (p) =>
+                (p.productCategory || "").toLowerCase() === selectedCategory.toLowerCase() ||
+                (selectedCategory === "toys & books" &&
+                  ["toys", "books"].includes((p.productCategory || "").toLowerCase()))
+            )
+      )
     }
-
     fetchData()
-  }, [categoryParam])
+  }, [selectedCategory])
 
   useEffect(() => {
+    if (!searchQuery) {
+      setFilteredProducts(
+        selectedCategory === "all"
+          ? allProducts
+          : allProducts.filter(
+              (p) =>
+                (p.productCategory || "").toLowerCase() === selectedCategory.toLowerCase() ||
+                (selectedCategory === "toys & books" &&
+                  ["toys", "books"].includes((p.productCategory || "").toLowerCase()))
+            )
+      )
+      return
+    }
     const delayDebounceFn = setTimeout(() => {
-      const fetchData = async () => {
-        const products = await fetchProducts()
-        if (searchQuery) {
-          const filtered = products.filter((product) =>
-            product.name.toLowerCase().includes(searchQuery.toLowerCase())
-          )
-          setFilteredProducts(filtered)
-        } else {
-          setFilteredProducts(products)
-        }
-      }
-
-      fetchData()
+      setFilteredProducts(
+        allProducts.filter(
+          (product) =>
+            product.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+            (selectedCategory === "all"
+              ? true
+              : (product.productCategory || "").toLowerCase() === selectedCategory.toLowerCase() ||
+                (selectedCategory === "toys & books" &&
+                  ["toys", "books"].includes((product.productCategory || "").toLowerCase())))
+        )
+      )
     }, 300)
-
     return () => clearTimeout(delayDebounceFn)
-  }, [searchQuery])
+  }, [searchQuery, selectedCategory, allProducts])
 
   const handleAddToCart = (product: Product) => {
     addItem(product)
@@ -83,6 +99,44 @@ export default function ProductsPage() {
     }
 
     fetchData()
+  }
+
+  // Helper to render product image
+  const renderProductImage = (product: Product) => {
+    if (product.imagePath && typeof product.imagePath === "string") {
+      // If imagePath is a full URL, use it directly
+      if (product.imagePath.startsWith("http")) {
+        return (
+          <img
+            src={product.imagePath}
+            alt={product.name}
+            className="object-cover w-full h-full"
+            style={{ aspectRatio: "1/1" }}
+          />
+        )
+      }
+      // If imagePath is a local file path, extract the filename and use the static resource URL
+      const fileName = product.imagePath.split(/[\\/]/).pop()
+      if (fileName) {
+        return (
+          <img
+            src={`http://localhost:8080/product-images/${fileName}`}
+            alt={product.name}
+            className="object-cover w-full h-full"
+            style={{ aspectRatio: "1/1" }}
+          />
+        )
+      }
+    }
+    // fallback
+    return (
+      <img
+        src="/placeholder.svg"
+        alt={product.name}
+        className="object-cover w-full h-full"
+        style={{ aspectRatio: "1/1" }}
+      />
+    )
   }
 
   return (
@@ -146,7 +200,12 @@ export default function ProductsPage() {
                 : `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Products`}
             </h1>
 
-            <Tabs defaultValue={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+            <Tabs
+              defaultValue={selectedCategory}
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+              className="w-full"
+            >
               <TabsList className="bg-white shadow-sm border">
                 <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-white">
                   All Products
@@ -187,22 +246,17 @@ export default function ProductsPage() {
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredProducts.map((product) => (
                     <Card
-                      key={product.productId} // Ensure the key is unique by using productId
+                      key={product.productId}
                       className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-white"
                     >
                       <div className="relative">
-                        <Link href={`/products/${product.id}`}>
+                        <Link href={`/products/${product.productId}`}>
                           <div className="aspect-square relative overflow-hidden">
-                            <Image
-                              src={product.image || "/placeholder.svg"}
-                              alt={product.name}
-                              fill
-                              className="object-cover transition-transform group-hover:scale-105"
-                            />
+                            {renderProductImage(product)}
                           </div>
                         </Link>
 
-                        {product.stock < 10 && (
+                        {product.quantityOnHand < 10 && (
                           <Badge className="absolute top-2 left-2 bg-accent text-white">
                             <Zap className="h-3 w-3 mr-1" />
                             Few Left
@@ -211,7 +265,7 @@ export default function ProductsPage() {
                       </div>
 
                       <CardContent className="p-4">
-                        <Link href={`/products/${product.id}`}>
+                        <Link href={`/products/${product.productId}`}>
                           <h3 className="font-semibold text-lg line-clamp-2 text-gray-900 group-hover:text-primary transition-colors">
                             {product.name}
                           </h3>
@@ -238,8 +292,8 @@ export default function ProductsPage() {
                             </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">
-                            {product.stock > 0 ? (
-                              <span className="text-green-600">✓ In Stock ({product.stock} left)</span>
+                            {product.quantityOnHand > 0 ? (
+                              <span className="text-green-600">✓ In Stock ({product.quantityOnHand} left)</span>
                             ) : (
                               <span className="text-red-600">✗ Out of Stock</span>
                             )}
@@ -251,7 +305,7 @@ export default function ProductsPage() {
                         <Button
                           className="w-full bg-accent hover:bg-accent/90 text-white font-semibold"
                           onClick={() => handleAddToCart(product)}
-                          disabled={product.stock <= 0}
+                          disabled={product.quantityOnHand <= 0}
                         >
                           <ShoppingCart className="h-4 w-4 mr-2" />
                           Add to Cart

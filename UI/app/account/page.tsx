@@ -28,8 +28,11 @@ export default function AccountPage() {
   const { fetchLatestCart } = useCart() // Access fetchLatestCart from CartProvider
 
   const [isEditingProfile, setIsEditingProfile] = useState(false)
+  const [editedUName, setEditedUName] = useState("")
   const [editedName, setEditedName] = useState("")
   const [editedEmail, setEditedEmail] = useState("")
+  const [editedAddress, setEditedAddress] = useState("")
+  const [editedPhone, setEditedPhone] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [userOrders, setUserOrders] = useState([])
   const [productsWithoutFeedback, setProductsWithoutFeedback] = useState<ProductFeedbackItem[]>([])
@@ -45,8 +48,10 @@ export default function AccountPage() {
     if (!user) {
       router.push("/login")
     } else {
-      setEditedName(user.name)
-      setEditedEmail(user.email)
+      setEditedName(user.name || user.username || "")
+      setEditedEmail(user.email || "")
+      setEditedAddress(user.address || "")
+      setEditedPhone(user.phoneNumber || "")
 
       const fetchOrders = async () => {
         try {
@@ -161,7 +166,6 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (user) {
-      console.log("Fetching all orders to build product details map...");
       axios
         .get("http://localhost:8080/customer/getAllOrders", {
           headers: {
@@ -169,7 +173,6 @@ export default function AccountPage() {
           },
         })
         .then((res) => {
-          console.log("Orders fetched for product details map:", res.data);
           const details: { [productId: string]: any } = {};
           res.data.forEach((order: any) => {
             order.items.forEach((item: any) => {
@@ -179,10 +182,10 @@ export default function AccountPage() {
                 quantity: item.quantity,
                 price: item.price,
                 description: item.description || "No description available",
+                imagePath: item.imagePath || null,
               };
             });
           });
-          console.log("Product details map built:", details);
           setProductDetailsMap(details);
         })
         .catch((error) => {
@@ -316,6 +319,27 @@ export default function AccountPage() {
     );
   };
 
+  const renderProductImage = (imagePath: string | null, productName: string | null) => {
+    if (imagePath) {
+      const fileName = imagePath.split(/[\\/]/).pop();
+      if (fileName) {
+        return (
+          <img
+            src={`http://localhost:8080/product-images/${fileName}`}
+            alt={productName || "Product Image"}
+            className="object-cover w-24 h-24 rounded"
+            style={{ aspectRatio: "1/1" }}
+          />
+        );
+      }
+    }
+    return (
+      <div className="w-24 h-24 bg-gray-200 flex items-center justify-center rounded">
+        <span className="text-sm text-muted-foreground">No Image</span>
+      </div>
+    );
+  };
+
   if (!user) {
     return null
   }
@@ -323,31 +347,53 @@ export default function AccountPage() {
   const handleSaveProfile = async () => {
     setIsSaving(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      // Prepare API payload
+      const payload = {
+        profileId: user.profileId,
+        name: editedName,
+        phno: editedPhone,
+        address: editedAddress,
+      }
 
-    // Update user data (in a real app, this would be an API call)
-    const updatedUser = {
-      ...user,
-      name: editedName,
-      email: editedEmail,
+      // Make PATCH request to update profile
+      await axios.patch(
+        "http://localhost:8080/customer/updateProfile",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+
+      // Update user data locally
+      const updatedUser = {
+        ...user,
+        username: editedUName,
+        name: editedName,
+        address: editedAddress,
+        phoneNumber: editedPhone,
+      }
+      localStorage.setItem("user", JSON.stringify(updatedUser))
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully.",
+      })
+
+      setIsEditingProfile(false)
+      setIsSaving(false)
+      window.location.reload()
+    } catch (error: any) {
+      toast({
+        title: "Profile update failed",
+        description: error?.message || "Could not update profile. Please try again.",
+        variant: "destructive",
+      })
+      setIsSaving(false)
     }
-
-    // Update localStorage
-    localStorage.setItem("user", JSON.stringify(updatedUser))
-
-    // Update auth context (you'd need to add an updateUser function to AuthProvider)
-    // For now, we'll just show a success message
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been updated successfully.",
-    })
-
-    setIsEditingProfile(false)
-    setIsSaving(false)
-
-    // Refresh the page to show updated data
-    window.location.reload()
   }
 
   return (
@@ -397,6 +443,15 @@ export default function AccountPage() {
                   {isEditingProfile ? (
                     <div className="space-y-4">
                       <div>
+                        <Label htmlFor="uname">User Name</Label>
+                        <Input
+                          id="uname"
+                          value={editedUName}
+                          disabled
+                          placeholder="Enter your user name"
+                        />
+                      </div>
+                      <div>
                         <Label htmlFor="name">Full Name</Label>
                         <Input
                           id="name"
@@ -411,8 +466,26 @@ export default function AccountPage() {
                           id="email"
                           type="email"
                           value={editedEmail}
-                          onChange={(e) => setEditedEmail(e.target.value)}
+                          disabled
                           placeholder="Enter your email"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="address">Address</Label>
+                        <Input
+                          id="address"
+                          value={editedAddress}
+                          onChange={(e) => setEditedAddress(e.target.value)}
+                          placeholder="Enter your address"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <Input
+                          id="phone"
+                          value={editedPhone}
+                          onChange={(e) => setEditedPhone(e.target.value)}
+                          placeholder="Enter your phone number"
                         />
                       </div>
                       <div>
@@ -423,12 +496,24 @@ export default function AccountPage() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">User Name</h3>
+                        <p className="text-base">{user.username}</p>
+                      </div>
+                      <div>
                         <h3 className="text-sm font-medium text-muted-foreground">Full Name</h3>
                         <p className="text-base">{user.name}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
                         <p className="text-base">{user.email}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Address</h3>
+                        <p className="text-base">{user.address}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground">Phone Number</h3>
+                        <p className="text-base">{user.phoneNumber}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground">Account Type</h3>
@@ -447,8 +532,11 @@ export default function AccountPage() {
                         variant="outline"
                         onClick={() => {
                           setIsEditingProfile(false)
+                          setEditedUName(user.username)
                           setEditedName(user.name)
                           setEditedEmail(user.email)
+                          setEditedAddress(user.address)
+                          setEditedPhone(user.phoneNumber)
                         }}
                         disabled={isSaving}
                       >
@@ -551,11 +639,14 @@ export default function AccountPage() {
                           const details = productDetailsMap[product.productId];
                           return (
                             <div key={product.productId} className="border rounded-lg p-4 flex flex-col gap-2">
-                              <div>
-                                <span className="font-semibold">Product: </span>
-                                <span className="font-semibold text-primary">
-                                  {details?.productName || "Unknown Product"}
-                                </span>
+                              <div className="flex items-center gap-4">
+                                {renderProductImage(details?.imagePath, details?.productName)}
+                                <div>
+                                  <span className="font-semibold">Product: </span>
+                                  <span className="font-semibold text-primary">
+                                    {details?.productName || "Unknown Product"}
+                                  </span>
+                                </div>
                               </div>
                               <div className="flex items-center gap-2 mb-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
@@ -594,7 +685,10 @@ export default function AccountPage() {
                         const rating = feedbackRatings[product.productId] || 5;
                         return (
                           <div key={product.productId} className="border rounded-lg p-4 flex flex-col gap-1">
-                            <span className="font-semibold">{details?.productName || "Unknown Product"}</span>
+                            <div className="flex items-center gap-4">
+                              {renderProductImage(details?.imagePath, details?.productName)}
+                              <span className="font-semibold">{details?.productName || "Unknown Product"}</span>
+                            </div>
                             <div className="flex items-center gap-1 mb-1">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star

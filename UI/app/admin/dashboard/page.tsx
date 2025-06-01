@@ -19,25 +19,45 @@ import {
   Settings,
   MessageSquare,
 } from "lucide-react"
-import { products, salesData, getProductMovementAnalysis } from "@/lib/data"
+import { fetchSalesByPeriod, fetchProductMovementAnalysis } from "@/lib/data"
 
 export default function AdminDashboardPage() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const [selectedPeriod, setSelectedPeriod] = useState("week")
+  const [salesData, setSalesData] = useState<any[]>([])
+  const [movementAnalysis, setMovementAnalysis] = useState<{ fastMoving: any[]; slowMoving: any[] }>({ fastMoving: [], slowMoving: [] })
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    if (!user || user.role?.toLowerCase() !== "admin") {
       router.push("/login")
     }
   }, [user, router])
 
-  if (!user || user.role !== "admin") {
+  useEffect(() => {
+    // Fetch sales data for all periods you want to support
+    const periods = ["week", "month", "year"]
+    Promise.all(periods.map(period => fetchSalesByPeriod(period.toUpperCase())))
+      .then(results => {
+        setSalesData(
+          results.map((data, idx) => ({
+            period: periods[idx],
+            ...data,
+          }))
+        )
+      })
+  }, [])
+
+  useEffect(() => {
+    fetchProductMovementAnalysis().then(setMovementAnalysis)
+  }, [])
+
+  if (!user || user.role?.toLowerCase() !== "admin") {
     return null
   }
 
   const currentSalesData = salesData.find((data) => data.period === selectedPeriod)
-  const { fastMoving, slowMoving } = getProductMovementAnalysis()
+  const { fastMoving, slowMoving } = movementAnalysis
 
   return (
     <div className="flex min-h-screen">
@@ -145,7 +165,7 @@ export default function AdminDashboardPage() {
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{products.length}</div>
+                <div className="text-2xl font-bold">{movementAnalysis.fastMoving.length + movementAnalysis.slowMoving.length}</div>
                 <p className="text-xs text-muted-foreground">Total products in inventory</p>
               </CardContent>
             </Card>

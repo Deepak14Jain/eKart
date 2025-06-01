@@ -120,6 +120,7 @@ public class BillingOrderServiceImpl implements BillingOrderService {
             itemDTO.productName = item.getProduct().getName();
             itemDTO.quantity = item.getQuantity();
             itemDTO.price = item.getPriceAtOrderTime();
+            itemDTO.imagePath = item.getProduct().getImagePath(); // Include image path
             return itemDTO;
         }).toList();
         dto.totalAmount = dto.items.stream().mapToDouble(i -> i.price * i.quantity).sum();

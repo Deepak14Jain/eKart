@@ -36,3 +36,5 @@ build/
 
 ###Node Modules###
 node_modules/
+/UI/node_modules/
+/UI/.next

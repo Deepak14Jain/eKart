@@ -38,8 +38,18 @@ export default function LoginPage() {
           description: "You have been logged in successfully.",
         })
 
+        // Get user from localStorage to check role
+        const userStr = localStorage.getItem("user")
+        let userRole = ""
+        if (userStr) {
+          try {
+            const userObj = JSON.parse(userStr)
+            userRole = userObj.role?.toLowerCase()
+          } catch {}
+        }
+
         // Redirect based on role
-        if (email === "admin@example.com") {
+        if (userRole === "admin") {
           router.push("/admin/dashboard")
         } else {
           router.push("/products")

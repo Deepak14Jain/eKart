@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -74,7 +75,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Product updateProduct(Product product) {
         logger.debug("Inside updateProduct method");
-        try{
+        try {
             Product updatedProduct = productRepository.findById(product.getProductId()).get();
             productValidations.validateProduct(product);
             updatedProduct.setName(product.getName());
@@ -82,6 +83,11 @@ public class ProductServiceImpl implements ProductService {
             updatedProduct.setDescription(product.getDescription());
             updatedProduct.setProductCategory(product.getProductCategory());
             updatedProduct.setQuantityOnHand(product.getQuantityOnHand());
+            // Add these lines to update image if present
+            if (product.getImagePath() != null) {
+                updatedProduct.setImagePath(product.getImagePath());
+                updatedProduct.setImageType(product.getImageType());
+            }
             productRepository.save(updatedProduct);
             logger.info("Product: {} updated successfully", product.getName());
             return updatedProduct;
@@ -107,8 +113,8 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public List<SalesSummaryDTO> getSalesSummaryByProduct(TimeRange range) {
         logger.debug("Inside getSalesSummaryByProduct method");
-        LocalDate now = LocalDate.now();
-        LocalDate startDate = getStartDateFor(range, now);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = getStartDateTimeFor(range, now);
         return orderItemRepository.getProductWiseSalesBetween(startDate, now);
     }
 
@@ -116,34 +122,18 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public List<SalesSummaryDTO> getSalesSummaryByCategory(TimeRange range) {
         logger.debug("Inside getSalesSummaryByCategory method");
-        LocalDate now = LocalDate.now();
-        LocalDate startDate = getStartDateFor(range, now);
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate = getStartDateTimeFor(range, now);
         return orderItemRepository.getCategoryWiseSalesBetween(startDate, now);
     }
 
-//    @Override
-//    public Map<String, Object> getSalesReport(String period) {
-//        return Map.of();
-//    }
-//
-//    @Override
-//    public List<Product> getFastMovingProducts() {
-//        return List.of();
-//    }
-//
-//    @Override
-//    public List<Product> getSlowMovingProducts() {
-//        return List.of();
-//    }
-
-
-    private LocalDate getStartDateFor(TimeRange range, LocalDate now) {
+    private LocalDateTime getStartDateTimeFor(TimeRange range, LocalDateTime now) {
         return switch (range) {
             case WEEK -> now.minusWeeks(1);
-            case MONTH -> now.withDayOfMonth(1);
-            case QUARTER -> now.withMonth(((now.getMonthValue() - 1) / 3) * 3 + 1).withDayOfMonth(1);
-            case YEAR -> now.withDayOfYear(1);
-            default -> now.minusYears(10); // fallback
+            case MONTH -> now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case QUARTER -> now.withMonth(((now.getMonthValue() - 1) / 3) * 3 + 1).withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            case YEAR -> now.withDayOfYear(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            default -> now.minusYears(10);
         };
     }
 

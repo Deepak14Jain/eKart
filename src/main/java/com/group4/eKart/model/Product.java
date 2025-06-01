@@ -35,4 +35,9 @@ public class Product {
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Feedback> feedbacks = new HashSet<>();
+
+    // Store image path or filename instead of binary data
+    private String imagePath;
+
+    private String imageType;
 }
