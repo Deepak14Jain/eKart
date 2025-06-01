@@ -34,13 +34,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("user")
-    const storedToken = localStorage.getItem("authToken") // Check for stored token
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("authToken");
+
     if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser))
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        console.log("User loaded from localStorage:", parsedUser); // Debug log
+        setUser(parsedUser);
+      } catch (error) {
+        console.error("Failed to parse user from localStorage:", error);
+      }
+    } else {
+      console.log("No user or token found in localStorage.");
     }
-    setIsLoading(false)
+
+    setIsLoading(false);
   }, [])
 
   const login = async (email: string, password: string) => {

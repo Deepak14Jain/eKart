@@ -38,3 +38,6 @@ build/
 node_modules/
 /UI/node_modules/
 /UI/.next
+
+
+/product-images

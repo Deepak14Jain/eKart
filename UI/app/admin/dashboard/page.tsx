@@ -29,7 +29,9 @@ export default function AdminDashboardPage() {
   const [movementAnalysis, setMovementAnalysis] = useState<{ fastMoving: any[]; slowMoving: any[] }>({ fastMoving: [], slowMoving: [] })
 
   useEffect(() => {
+    // Redirect to login if user is not authenticated or not an admin
     if (!user || user.role?.toLowerCase() !== "admin") {
+      console.log("Unauthorized access to admin dashboard. Redirecting to login.")
       router.push("/login")
     }
   }, [user, router])
@@ -155,7 +157,9 @@ export default function AdminDashboardPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹{currentSalesData?.totalSales.toFixed(2) || "0.00"}</div>
+                <div className="text-2xl font-bold">
+                  ₹{(currentSalesData?.totalSales || 0).toFixed(2)}
+                </div>
                 <p className="text-xs text-muted-foreground">For the selected {selectedPeriod}</p>
               </CardContent>
             </Card>
@@ -211,7 +215,7 @@ export default function AdminDashboardPage() {
                       <CardDescription>Sales breakdown by category for the selected {selectedPeriod}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {currentSalesData && (
+                      {currentSalesData?.categorySales ? (
                         <div className="space-y-4">
                           {Object.entries(currentSalesData.categorySales).map(([category, sales]) => (
                             <div key={category} className="flex items-center">
@@ -230,6 +234,8 @@ export default function AdminDashboardPage() {
                             </div>
                           ))}
                         </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No category sales data available.</p>
                       )}
                     </CardContent>
                   </Card>
@@ -240,7 +246,7 @@ export default function AdminDashboardPage() {
                       <CardDescription>Best performing products for the selected {selectedPeriod}</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {currentSalesData && (
+                      {currentSalesData?.productSales ? (
                         <div className="space-y-4">
                           {Object.entries(currentSalesData.productSales)
                             .sort((a, b) => b[1].revenue - a[1].revenue)
@@ -255,6 +261,8 @@ export default function AdminDashboardPage() {
                               </div>
                             ))}
                         </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No product sales data available.</p>
                       )}
                     </CardContent>
                   </Card>

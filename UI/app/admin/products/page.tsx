@@ -39,22 +39,12 @@ import {
   Search,
 } from "lucide-react"
 import type { Product } from "@/lib/types"
-
-import { products } from "@/lib/data"
-
+import axios from "axios"
 export default function AdminProductsPage() {
   const router = useRouter()
   const { user, logout } = useAuth()
   const { toast } = useToast()
-  const [productsList, setProductsList] = useState<Product[]>(() => {
-    if (typeof window !== "undefined") {
-      const storedProducts = localStorage.getItem("products")
-      if (storedProducts) {
-        return JSON.parse(storedProducts)
-      }
-    }
-    return products
-  })
+  const [productsList, setProductsList] = useState<Product[]>([]) // Initialize with an empty array
   const [searchQuery, setSearchQuery] = useState("")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -68,25 +58,66 @@ export default function AdminProductsPage() {
     stock: 0,
     image: "/placeholder.svg?height=200&width=200",
   })
+  const [newProductImage, setNewProductImage] = useState<File | null>(null); // State for the image file
 
   useEffect(() => {
-    if (!user || user.role !== "admin") {
+    // Debug logs to check user and role
+    console.log("User object in AdminProductsPage:", user)
+
+    if (!user) {
+      console.log("User is not authenticated. Redirecting to login.")
+      router.push("/login")
+    } else if (user.role?.toLowerCase() !== "admin") {
+      console.log("User is not an admin. Redirecting to login.")
       router.push("/login")
     }
   }, [user, router])
 
-  if (!user || user.role !== "admin") {
-    return null
+  useEffect(() => {
+    if (user && user.role?.toLowerCase() === "admin") {
+      console.log("User is admin. Preparing to fetch products..."); // Debug log
+
+      const fetchProductsFromApi = async () => {
+        try {
+          console.log("Fetching products from API..."); // Debug log
+          const response = await axios.get("http://localhost:8080/admin/products/getAll", {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("authToken")}`, // Authorization header with token
+            },
+          });
+          console.log("API response for products:", response.data); // Debug log
+          setProductsList(response.data); // Update state with API response
+        } catch (error) {
+          console.error("Failed to fetch products from API:", error);
+          toast({
+            title: "Error fetching products",
+            description: "Could not load products. Please try again later.",
+            variant: "destructive",
+          });
+        }
+      };
+
+      fetchProductsFromApi();
+    } else {
+      console.log("User is not admin or user is null. Skipping product fetch."); // Debug log
+    }
+  }, [user, toast])
+
+  // Ensure productsList is not null or undefined
+  if (!productsList || productsList.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">No products available to display.</p>
+      </div>
+    )
   }
 
+  // Search functionality
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const existingProducts = JSON.parse(localStorage.getItem("products") || "[]")
-    const allProducts = existingProducts.length > 0 ? existingProducts : products
-
     if (searchQuery) {
-      const filtered = allProducts.filter(
+      const filtered = productsList.filter(
         (product) =>
           product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,46 +125,73 @@ export default function AdminProductsPage() {
       )
       setProductsList(filtered)
     } else {
-      setProductsList(allProducts)
+      // No fallback to static data, just reset to the original list
+      setProductsList([...productsList])
     }
   }
 
-  const handleAddProduct = () => {
-    const existingProducts = JSON.parse(localStorage.getItem("products") || "[]")
-    const allProducts = existingProducts.length > 0 ? existingProducts : products
-
-    const id = `p${Date.now()}` // Use timestamp for unique ID
-    const productToAdd = {
-      id,
-      name: newProduct.name || "New Product",
-      description: newProduct.description || "Product description",
-      price: newProduct.price || 0,
-      category: newProduct.category || "electronics",
-      stock: newProduct.stock || 0,
-      image: newProduct.image || "/placeholder.svg?height=200&width=200",
+  const handleAddProduct = async () => {
+    if (!newProduct.name || !newProduct.description || !newProduct.price || !newProduct.category || !newProduct.stock) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    const updatedProducts = [...allProducts, productToAdd]
+    const formData = new FormData();
 
-    // Save to localStorage
-    localStorage.setItem("products", JSON.stringify(updatedProducts))
+    // Append product as JSON
+    const productData = {
+      name: newProduct.name,
+      description: newProduct.description,
+      price: newProduct.price,
+      quantityOnHand: newProduct.stock,
+      productCategory: newProduct.category.toUpperCase(),
+    };
+    formData.append("product", new Blob([JSON.stringify(productData)], { type: "application/json" }));
 
-    // Update local state
-    setProductsList(updatedProducts)
-    setIsAddDialogOpen(false)
-    setNewProduct({
-      name: "",
-      description: "",
-      price: 0,
-      category: "electronics",
-      stock: 0,
-      image: "/placeholder.svg?height=200&width=200",
-    })
+    // Append image if available
+    if (newProductImage) {
+      formData.append("image", newProductImage, newProductImage.name);
+    }
 
-    toast({
-      title: "Product added",
-      description: `${productToAdd.name} has been added successfully.`,
-    })
+    try {
+      const response = await axios.post("http://localhost:8080/admin/products/addProduct", formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          // Let the browser set the Content-Type with the correct boundary
+        },
+      });
+
+      if (response.status === 200) {
+        toast({
+          title: "Product added",
+          description: `${newProduct.name} has been added successfully.`,
+        });
+
+        // Refresh the product list
+        setProductsList((prev) => [...prev, response.data]);
+        setIsAddDialogOpen(false);
+        setNewProduct({
+          name: "",
+          description: "",
+          price: 0,
+          category: "electronics",
+          stock: 0,
+          image: "/placeholder.svg?height=200&width=200",
+        });
+        setNewProductImage(null);
+      }
+    } catch (error) {
+      console.error("Failed to add product:", error);
+      toast({
+        title: "Error adding product",
+        description: "Could not add the product. Please try again later.",
+        variant: "destructive",
+      });
+    }
   }
 
   const handleEditProduct = () => {
@@ -159,25 +217,58 @@ export default function AdminProductsPage() {
     })
   }
 
-  const handleDeleteProduct = () => {
-    if (!selectedProduct) return
+  const handleDeleteProduct = async () => {
+    console.log("handleDeleteProduct called. selectedProduct:", selectedProduct); // LOG
 
-    const existingProducts = JSON.parse(localStorage.getItem("products") || "[]")
-    const allProducts = existingProducts.length > 0 ? existingProducts : products
+    const id = selectedProduct?.id || selectedProduct?.productId;
+    if (!id) {
+      toast({
+        title: "Error",
+        description: "No product selected for deletion.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const updatedProducts = allProducts.filter((product) => product.id !== selectedProduct.id)
+    try {
+      console.log("Sending DELETE request for product id:", id); // LOG
+      const response = await axios.delete(
+        `http://localhost:8080/admin/products/deleteById/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        }
+      );
 
-    // Save to localStorage
-    localStorage.setItem("products", JSON.stringify(updatedProducts))
+      console.log("Delete response:", response); // LOG
 
-    // Update local state
-    setProductsList(updatedProducts)
-    setIsDeleteDialogOpen(false)
+      if (response.status === 200) {
+        toast({
+          title: "Product deleted",
+          description: `${selectedProduct.name} has been deleted successfully.`,
+        });
 
-    toast({
-      title: "Product deleted",
-      description: `${selectedProduct.name} has been deleted successfully.`,
-    })
+        setProductsList((prev) =>
+          prev.filter((product) => (product.id || product.productId) !== id)
+        );
+        setIsDeleteDialogOpen(false);
+        setSelectedProduct(null);
+      }
+    } catch (error: any) {
+      console.error("Failed to delete product:", error);
+
+      // Ensure toast is triggered for any delete failure
+      toast({
+        title: "Error deleting product",
+        description: "This product cannot be deleted.",
+        variant: "destructive",
+      });
+    } finally {
+      // Ensure the dialog is closed in all cases
+      setIsDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    }
   }
 
   return (
@@ -341,6 +432,15 @@ export default function AdminProductsPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="image">Product Image</Label>
+                    <Input
+                      id="image"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setNewProductImage(e.target.files?.[0] || null)}
+                    />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -502,14 +602,22 @@ export default function AdminProductsPage() {
                         </Dialog>
 
                         <Dialog
-                          open={isDeleteDialogOpen && selectedProduct?.id === product.id}
+                          open={isDeleteDialogOpen}
                           onOpenChange={(open) => {
-                            setIsDeleteDialogOpen(open)
-                            if (!open) setSelectedProduct(null)
+                            setIsDeleteDialogOpen(open);
+                            if (!open) setSelectedProduct(null);
                           }}
                         >
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="icon" onClick={() => setSelectedProduct(product)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                console.log("Delete icon clicked for product:", product); // LOG
+                                setSelectedProduct(product);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
                               <Trash2 className="h-4 w-4" />
                               <span className="sr-only">Delete</span>
                             </Button>
@@ -525,13 +633,18 @@ export default function AdminProductsPage() {
                               <div className="py-4">
                                 <p className="font-medium">{selectedProduct.name}</p>
                                 <p className="text-sm text-muted-foreground">{selectedProduct.description}</p>
+                                <p className="text-xs text-muted-foreground">Product ID: {selectedProduct.id}</p> {/* LOG */}
                               </div>
                             )}
                             <DialogFooter>
                               <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
                                 Cancel
                               </Button>
-                              <Button variant="destructive" onClick={handleDeleteProduct}>
+                              <Button
+                                variant="destructive"
+                                onClick={handleDeleteProduct}
+                                disabled={!selectedProduct}
+                              >
                                 Delete
                               </Button>
                             </DialogFooter>
